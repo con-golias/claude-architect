@@ -1,0 +1,20 @@
+{
+  "name": "claude-architect",
+  "version": "1.0.0",
+  "description": "Enterprise architecture enforcement for Claude Code — transforms vibe coding into professional-grade development with clean architecture, compliance scoring, and self-improvement",
+  "author": {
+    "name": "GoliathReigns"
+  },
+  "repository": "https://github.com/GoliathReigns/claude-architect",
+  "license": "MIT",
+  "keywords": [
+    "architecture",
+    "clean-architecture",
+    "solid",
+    "code-quality",
+    "compliance",
+    "scaffolding",
+    "enterprise",
+    "mcp"
+  ]
+}

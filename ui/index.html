@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Architect — Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <h1>Claude Architect</h1>
+      <span class="version">v1.0.0</span>
+    </div>
+    <div id="project-selector">
+      <select id="project-select" onchange="loadProject(this.value)">
+        <option value="">Select project...</option>
+      </select>
+    </div>
+  </header>
+
+  <main id="dashboard" class="hidden">
+    <!-- Score Card -->
+    <section class="score-card">
+      <div class="score-gauge">
+        <div class="score-circle" id="score-circle">
+          <span class="score-value" id="score-value">--</span>
+          <span class="score-label">/ 100</span>
+        </div>
+        <span class="trend" id="trend-badge">stable</span>
+      </div>
+      <div class="score-meta">
+        <h2 id="project-name">Project Name</h2>
+        <p id="project-path" class="muted"></p>
+        <p id="last-checked" class="muted"></p>
+      </div>
+    </section>
+
+    <!-- Violation Summary -->
+    <section class="violation-cards">
+      <div class="card critical">
+        <span class="card-count" id="critical-count">0</span>
+        <span class="card-label">Critical</span>
+      </div>
+      <div class="card warning">
+        <span class="card-count" id="warning-count">0</span>
+        <span class="card-label">Warning</span>
+      </div>
+      <div class="card info">
+        <span class="card-count" id="info-count">0</span>
+        <span class="card-label">Info</span>
+      </div>
+    </section>
+
+    <!-- Compliance Trend Chart -->
+    <section class="chart-section">
+      <h3>Compliance Trend</h3>
+      <canvas id="trend-chart" height="200"></canvas>
+    </section>
+
+    <!-- Violations Table -->
+    <section class="violations-section">
+      <h3>Open Violations</h3>
+      <table id="violations-table">
+        <thead>
+          <tr>
+            <th>Severity</th>
+            <th>Rule</th>
+            <th>Description</th>
+            <th>File</th>
+          </tr>
+        </thead>
+        <tbody id="violations-body"></tbody>
+      </table>
+    </section>
+
+    <!-- Recent Decisions -->
+    <section class="decisions-section">
+      <h3>Recent Decisions</h3>
+      <div id="decisions-list"></div>
+    </section>
+
+    <!-- Improvement Suggestions -->
+    <section class="suggestions-section" id="suggestions-section" class="hidden">
+      <h3>Improvement Suggestions</h3>
+      <div id="suggestions-list"></div>
+    </section>
+  </main>
+
+  <div id="no-project" class="center-message">
+    <h2>Select a project to view its architecture dashboard</h2>
+    <p>Run <code>/architect-init</code> in Claude Code to register a project</p>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

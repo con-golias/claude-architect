@@ -1,0 +1,26 @@
+{
+  "name": "claude-architect-plugin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Enterprise architecture enforcement plugin for Claude Code",
+  "type": "module",
+  "scripts": {
+    "build": "bun run build.ts",
+    "dev": "bun run src/services/worker/WorkerServer.ts",
+    "test": "bun test",
+    "lint": "bunx biome check src/",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.0",
+    "@types/express": "^4.17.21",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}

@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.bun/
+
+# Build output
+dist/
+*.tgz
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Debug
+*.log
+npm-debug.log*
+
+# Database (local only)
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Test coverage
+coverage/
+
+# Claude Code local config
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Temporary files
+nul
