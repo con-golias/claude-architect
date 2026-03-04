@@ -117,9 +117,11 @@ export function registerArchitectRoutes(router: Router, db: Database): void {
             .map((l) => l.replace(/^\s*-\s*/, "").trim())
             .filter(Boolean);
 
+          // Normalize backslashes for Windows compatibility
+          const normalizedFilePath = filePath.replace(/\\/g, "/");
           const isRelevant = paths.some((p) => {
             const pattern = p.replace(/\*\*/g, ".*").replace(/\*/g, "[^/]*");
-            return new RegExp(pattern).test(filePath);
+            return new RegExp(pattern).test(normalizedFilePath);
           });
 
           if (!isRelevant) continue;

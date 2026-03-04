@@ -27,9 +27,8 @@ export default async function handleContext(): Promise<void> {
     return;
   }
 
-  // Get open critical/warning violations
+  // Get open violations (all severities, most critical first)
   const violations = getOpenViolations(db, project.id, {
-    severity: "warning",
     limit: 5,
   });
 

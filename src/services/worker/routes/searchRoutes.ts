@@ -87,7 +87,7 @@ export function registerSearchRoutes(router: Router, db: Database): void {
     const projectId = project?.id;
 
     if (!projectId) {
-      res.json({ events: [], message: "Project not found" });
+      res.status(404).json({ events: [], message: "Project not found" });
       return;
     }
 

@@ -6,6 +6,7 @@
  */
 
 import express from "express";
+import type { Request, Response, NextFunction } from "express";
 import { join } from "path";
 import { existsSync } from "fs";
 import { registerRoutes } from "./routes";
@@ -55,6 +56,12 @@ function startServer(): void {
   // Register API routes
   registerRoutes(app);
 
+  // Global error handler — catches unhandled route errors
+  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    logger.error("Unhandled route error", { error: err.message, stack: err.stack });
+    res.status(500).json({ error: "Internal server error" });
+  });
+
   // Initialize database
   getDatabase();
 
@@ -67,33 +74,66 @@ function startServer(): void {
   // Graceful shutdown
   process.on("SIGTERM", () => {
     logger.info("Shutting down worker server");
-    server.close();
-    closeDatabase();
+    server.close(() => closeDatabase());
   });
 
   process.on("SIGINT", () => {
-    server.close();
-    closeDatabase();
+    server.close(() => closeDatabase());
   });
 }
 
-// CLI command routing
-const command = process.argv[2];
+/**
+ * Route hook commands to the correct handler module.
+ * Uses explicit imports so Bun's bundler includes all handlers in the bundle.
+ *
+ * @param hookName - Name of the hook handler to execute
+ */
+async function runHook(hookName: string): Promise<void> {
+  let handler: { default: () => Promise<void> };
 
-if (command === "start") {
-  startServer();
-} else if (command === "hook") {
-  // Route to hook handlers
-  const hookName = process.argv[3];
-  import(`../../cli/handlers/${hookName}`)
-    .then((handler) => handler.default?.())
-    .catch((err) => {
-      logger.error(`Hook handler "${hookName}" failed`, {
-        error: err.message,
-      });
-      process.stdout.write("Success");
-    });
-} else {
-  logger.error(`Unknown command: ${command}`);
-  process.exit(1);
+  switch (hookName) {
+    case "session-init":
+      handler = await import("../../cli/handlers/session-init");
+      break;
+    case "context":
+      handler = await import("../../cli/handlers/context");
+      break;
+    case "post-change":
+      handler = await import("../../cli/handlers/post-change");
+      break;
+    case "summarize":
+      handler = await import("../../cli/handlers/summarize");
+      break;
+    case "session-complete":
+      handler = await import("../../cli/handlers/session-complete");
+      break;
+    default:
+      logger.error(`Unknown hook handler: ${hookName}`);
+      process.exit(1);
+      return;
+  }
+
+  await handler.default();
 }
+
+// CLI command routing (async IIFE for proper await support)
+(async () => {
+  const command = process.argv[2];
+
+  if (command === "start") {
+    startServer();
+  } else if (command === "hook") {
+    const hookName = process.argv[3];
+    try {
+      await runHook(hookName);
+    } catch (err) {
+      logger.error(`Hook handler "${hookName}" failed`, {
+        error: (err as Error).message,
+      });
+      process.exit(1);
+    }
+  } else {
+    logger.error(`Unknown command: ${command}`);
+    process.exit(1);
+  }
+})();

@@ -6,6 +6,7 @@
 
 import type { Database } from "bun:sqlite";
 import type { ProjectRecord } from "../../types/database";
+import { normalizePath } from "../../utils/paths";
 
 /**
  * Register a new project or update an existing one.
@@ -20,9 +21,10 @@ export function upsertProject(
     Partial<ProjectRecord>
 ): ProjectRecord {
   const now = Date.now();
+  const normalizedProjectPath = normalizePath(project.path);
   const existing = db
     .query<ProjectRecord, [string]>("SELECT * FROM projects WHERE path = ?")
-    .get(project.path);
+    .get(normalizedProjectPath);
 
   if (existing) {
     db.query(
@@ -43,7 +45,7 @@ export function upsertProject(
   ).run(
     project.id,
     project.name,
-    project.path,
+    normalizedProjectPath,
     project.tech_stack ?? null,
     project.architecture_pattern ?? "clean",
     now,
@@ -53,7 +55,7 @@ export function upsertProject(
   return {
     id: project.id,
     name: project.name,
-    path: project.path,
+    path: normalizedProjectPath,
     tech_stack: project.tech_stack ?? null,
     architecture_pattern: project.architecture_pattern ?? "clean",
     created_at: now,
@@ -74,7 +76,7 @@ export function findProjectByPath(
 ): ProjectRecord | null {
   return db
     .query<ProjectRecord, [string]>("SELECT * FROM projects WHERE path = ?")
-    .get(projectPath);
+    .get(normalizePath(projectPath));
 }
 
 /**
