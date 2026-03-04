@@ -20,21 +20,22 @@ Stop producing spaghetti code with AI. Claude Architect enforces clean architect
 
 ## Quick Start
 
-### Install as Claude Code Plugin
-
-```bash
-# Install from the Claude Code plugin marketplace
-claude plugin install claude-architect
-```
-
-### Or Install Manually
+### Quick Start (Development)
 
 ```bash
 # Clone the repository
-git clone https://github.com/GoliathReigns/claude-architect.git
+git clone https://github.com/con-golias/claude-architect.git
 
-# Install as a local plugin
-claude plugin install --local /path/to/claude-architect
+# Load as plugin for current session
+claude --plugin-dir /path/to/claude-architect
+```
+
+### Permanent Installation
+
+```bash
+# Add as a local marketplace, then install
+/plugin marketplace add /path/to/claude-architect
+/plugin install claude-architect
 ```
 
 ### Then

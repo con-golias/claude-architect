@@ -13,12 +13,13 @@ import { validateProject } from "../../services/validator/ValidatorEngine";
 import { saveSnapshot } from "../../services/sqlite/Compliance";
 import { countBySeverity, countByRule } from "../../services/validator/ComplianceScorer";
 import { logger } from "../../utils/logger";
+import { getProjectPath } from "../../utils/paths";
 
 /**
  * Handle session end — summarize and update compliance.
  */
 export default async function handleSummarize(): Promise<void> {
-  const projectPath = process.cwd();
+  const projectPath = getProjectPath();
   const db = getDatabase();
   const project = findProjectByPath(db, projectPath);
 

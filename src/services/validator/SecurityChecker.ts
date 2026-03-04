@@ -8,7 +8,7 @@
 import { readFileSync } from "fs";
 import { join, relative } from "path";
 import type { Violation, CheckerResult } from "../../types/validation";
-import { normalizePath, globSync } from "../../utils/paths";
+import { normalizePath, globSync, isInsideStringLiteral } from "../../utils/paths";
 
 interface SecurityPattern {
   name: string;
@@ -157,8 +157,12 @@ export function checkSecurity(projectPath: string): CheckerResult {
           const lineNumber = content.substring(0, match.index).split("\n").length;
           const lineContent = lines[lineNumber - 1]?.trim() || "";
 
-          // Skip if it's a comment
+          // Skip if it's a comment or inside a string literal
           if (lineContent.startsWith("//") || lineContent.startsWith("*")) {
+            continue;
+          }
+          const matchStartInLine = match.index - content.lastIndexOf("\n", match.index - 1) - 1;
+          if (isInsideStringLiteral(lineContent, matchStartInLine)) {
             continue;
           }
 

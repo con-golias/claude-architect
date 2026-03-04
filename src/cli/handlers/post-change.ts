@@ -11,13 +11,14 @@ import { createViolation } from "../../services/sqlite/Violations";
 import { trackViolation } from "../../services/sqlite/Improvements";
 import { quickValidate } from "../../services/validator/ValidatorEngine";
 import { logger } from "../../utils/logger";
+import { getProjectPath } from "../../utils/paths";
 
 /**
  * Handle post-change validation.
  * Runs quick checks on changed files and stores violations.
  */
 export default async function handlePostChange(): Promise<void> {
-  const projectPath = process.cwd();
+  const projectPath = getProjectPath();
   const db = getDatabase();
   const project = findProjectByPath(db, projectPath);
 

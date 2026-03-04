@@ -12,6 +12,7 @@ import { getOpenViolations, getViolationCounts } from "../../services/sqlite/Vio
 import { getLatestSnapshot, getComplianceTrend } from "../../services/sqlite/Compliance";
 import { startSession } from "../../services/sqlite/Sessions";
 import { logger } from "../../utils/logger";
+import { getProjectPath } from "../../utils/paths";
 import { basename } from "path";
 
 /**
@@ -19,7 +20,7 @@ import { basename } from "path";
  * Outputs context string for Claude to use.
  */
 export default async function handleSessionInit(): Promise<void> {
-  const projectPath = process.cwd();
+  const projectPath = getProjectPath();
   const db = getDatabase();
 
   // Register or update project

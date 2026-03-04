@@ -12,13 +12,14 @@ import { findProjectByPath } from "../../services/sqlite/Projects";
 import { getOpenViolations } from "../../services/sqlite/Violations";
 import { getRulesDir } from "../../utils/paths";
 import { logger } from "../../utils/logger";
+import { getProjectPath } from "../../utils/paths";
 
 /**
  * Handle user prompt submission.
  * Returns relevant rules and open violations for context.
  */
 export default async function handleContext(): Promise<void> {
-  const projectPath = process.cwd();
+  const projectPath = getProjectPath();
   const db = getDatabase();
   const project = findProjectByPath(db, projectPath);
 

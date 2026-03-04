@@ -18,7 +18,7 @@ import {
   countBySeverity,
   countByRule,
 } from "./ComplianceScorer";
-import { normalizePath } from "../../utils/paths";
+import { normalizePath, isInsideStringLiteral } from "../../utils/paths";
 import { logger } from "../../utils/logger";
 
 interface ValidateOptions {
@@ -195,6 +195,8 @@ export function quickValidate(
       const lineNumber = content.substring(0, match.index).split("\n").length;
       const lineContent = lines[lineNumber - 1]?.trim() || "";
       if (lineContent.startsWith("//") || lineContent.startsWith("*")) continue;
+      const matchStartInLine = match.index - content.lastIndexOf("\n", match.index - 1) - 1;
+      if (isInsideStringLiteral(lineContent, matchStartInLine)) continue;
 
       violations.push({
         ruleId: "02-security",

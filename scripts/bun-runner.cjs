@@ -61,6 +61,10 @@ function main() {
   const scriptArgs = args.slice(1);
   const scriptPath = path.join(PLUGIN_ROOT, "scripts", scriptName);
 
+  // Capture the original working directory before changing cwd to PLUGIN_ROOT.
+  // Handlers use this to know which project they're operating on.
+  const originalCwd = process.cwd();
+
   const bunPath = findBun();
   if (!bunPath) {
     process.stderr.write(
@@ -70,7 +74,7 @@ function main() {
       cwd: PLUGIN_ROOT,
       stdio: ["pipe", "pipe", "pipe"],
       timeout: 300000,
-      env: { ...process.env, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },
+      env: { ...process.env, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT, CLAUDE_PROJECT_PATH: originalCwd },
       shell: true,
     });
     if (result.stdout) process.stdout.write(result.stdout);
@@ -83,7 +87,7 @@ function main() {
     cwd: PLUGIN_ROOT,
     stdio: ["pipe", "pipe", "pipe"],
     timeout: 300000,
-    env: { ...process.env, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT },
+    env: { ...process.env, CLAUDE_PLUGIN_ROOT: PLUGIN_ROOT, CLAUDE_PROJECT_PATH: originalCwd },
     shell: process.platform === "win32",
   });
 

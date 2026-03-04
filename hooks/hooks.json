@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/smart-install.js",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/smart-install.cjs",
             "timeout": 300
           }
         ]
@@ -19,12 +19,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/bun-runner.js worker-service.cjs start",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/bun-runner.cjs worker-service.cjs start",
             "timeout": 60
           },
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/bun-runner.js worker-service.cjs hook session-init",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/bun-runner.cjs worker-service.cjs hook session-init",
             "timeout": 60
           }
         ]
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/bun-runner.js worker-service.cjs hook context",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/bun-runner.cjs worker-service.cjs hook context",
             "timeout": 30
           }
         ]
@@ -47,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/bun-runner.js worker-service.cjs hook post-change",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/bun-runner.cjs worker-service.cjs hook post-change",
             "timeout": 60
           }
         ]
@@ -58,12 +58,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/bun-runner.js worker-service.cjs hook summarize",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/bun-runner.cjs worker-service.cjs hook summarize",
             "timeout": 120
           },
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/bun-runner.js worker-service.cjs hook session-complete",
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/bun-runner.cjs worker-service.cjs hook session-complete",
             "timeout": 30
           }
         ]

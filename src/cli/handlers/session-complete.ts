@@ -11,13 +11,14 @@ import { countSessions } from "../../services/sqlite/Sessions";
 import { analyzeAndSuggest } from "../../services/improver/SelfImprover";
 import { logger } from "../../utils/logger";
 import { loadConfig } from "../../utils/config";
+import { getProjectPath } from "../../utils/paths";
 
 /**
  * Handle session completion.
  * Runs self-improvement analysis if enough sessions exist, then cleans up.
  */
 export default async function handleSessionComplete(): Promise<void> {
-  const projectPath = process.cwd();
+  const projectPath = getProjectPath();
   const db = getDatabase();
   const project = findProjectByPath(db, projectPath);
 

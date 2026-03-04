@@ -21,6 +21,16 @@ export function getPluginRoot(): string {
 }
 
 /**
+ * Get the current project path that the plugin is operating on.
+ * Uses CLAUDE_PROJECT_PATH env var (set by bun-runner), falls back to cwd.
+ *
+ * @returns Absolute path to the project being analyzed
+ */
+export function getProjectPath(): string {
+  return process.env.CLAUDE_PROJECT_PATH || process.cwd();
+}
+
+/**
  * Get the persistent data directory (~/.claude-architect/).
  * Creates the directory if it doesn't exist.
  *
@@ -82,6 +92,28 @@ export function isInsideDir(filePath: string, dirPath: string): boolean {
   const normalizedFile = normalizePath(resolve(filePath));
   const normalizedDir = normalizePath(resolve(dirPath));
   return normalizedFile.startsWith(normalizedDir + "/");
+}
+
+/**
+ * Check if a position in a line is inside a string literal.
+ * Used to avoid false positives in pattern matching.
+ *
+ * @param line - The source line to check
+ * @param matchStart - The character offset of the match within the line
+ * @returns True if the position is inside a string literal
+ */
+export function isInsideStringLiteral(line: string, matchStart: number): boolean {
+  let inSingle = false;
+  let inDouble = false;
+  let inBacktick = false;
+  for (let i = 0; i < matchStart && i < line.length; i++) {
+    if (i > 0 && line[i - 1] === "\\") continue;
+    const ch = line[i];
+    if (ch === '"' && !inSingle && !inBacktick) inDouble = !inDouble;
+    else if (ch === "'" && !inDouble && !inBacktick) inSingle = !inSingle;
+    else if (ch === "`" && !inDouble && !inSingle) inBacktick = !inBacktick;
+  }
+  return inSingle || inDouble || inBacktick;
 }
 
 /**
