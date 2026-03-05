@@ -15,6 +15,11 @@ Call the `architect_check` MCP tool with the current project path:
 architect_check(project_path: "/path/to/project")
 ```
 
+### Step 1.5: Check Rule Configuration
+Call `architect_configure_rules(project_path, list_available: true)` to see which manual rules are active.
+Note: Check results depend on which manual rules are enabled. If the user's project uses microservices,
+event-driven architecture, or i18n, suggest enabling the relevant manual rules for a complete check.
+
 ### Step 2: Display Results
 
 **CRITICAL: You MUST use the EXACT violation counts from the tool response. Do NOT group, merge, summarize, or skip any violations. The dashboard at localhost:37778 shows the same data — if your counts differ from the dashboard, users will lose trust in the plugin.**

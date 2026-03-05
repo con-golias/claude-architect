@@ -26,69 +26,71 @@ import { getPendingSuggestions } from "../../sqlite/Improvements";
 export function registerDashboardRoutes(router: Router, db: Database): void {
   // Project status (API for MCP tools)
   router.get("/api/status", (req: Request, res: Response) => {
-    const projectPath = req.query.project_path as string;
-    if (!projectPath) {
-      res.status(400).json({ error: "project_path required" });
-      return;
-    }
+    try {
+      const projectPath = req.query.project_path as string;
+      if (!projectPath) {
+        res.status(400).json({ error: "project_path required" });
+        return;
+      }
 
-    const project = findProjectByPath(db, projectPath);
-    if (!project) {
+      const project = findProjectByPath(db, projectPath);
+      if (!project) {
+        res.json({
+          registered: false,
+          message: "Project not registered. Run /architect-init first.",
+        });
+        return;
+      }
+
+      const latestSnapshot = getLatestSnapshot(db, project.id);
+      const trend = getComplianceTrend(db, project.id);
+      const violationCounts = getViolationCounts(db, project.id);
+      const recentDecisions = getRecentDecisions(db, project.id, 5);
+      const sessionCount = countSessions(db, project.id);
+      const suggestions = getPendingSuggestions(db, project.id);
+
       res.json({
-        registered: false,
-        message: "Project not registered. Run /architect-init first.",
+        project,
+        complianceScore: latestSnapshot?.overall_score ?? null,
+        trend,
+        violations: violationCounts,
+        recentDecisions,
+        sessionCount,
+        suggestions: suggestions.length,
+        lastChecked: latestSnapshot?.created_at ?? null,
       });
-      return;
+    } catch (err) {
+      res.status(500).json({ error: `Status error: ${(err as Error).message}` });
     }
-
-    const latestSnapshot = getLatestSnapshot(db, project.id);
-    const trend = getComplianceTrend(db, project.id);
-    const violationCounts = getViolationCounts(db, project.id);
-    const recentDecisions = getRecentDecisions(db, project.id, 5);
-    const sessionCount = countSessions(db, project.id);
-    const suggestions = getPendingSuggestions(db, project.id);
-
-    res.json({
-      project,
-      complianceScore: latestSnapshot?.overall_score ?? null,
-      trend,
-      violations: violationCounts,
-      recentDecisions,
-      sessionCount,
-      suggestions: suggestions.length,
-      lastChecked: latestSnapshot?.created_at ?? null,
-    });
   });
 
   // Dashboard data (for web UI)
   router.get("/dashboard/data", (req: Request, res: Response) => {
-    const projectPath = req.query.project_path as string;
-    const project = projectPath ? findProjectByPath(db, projectPath) : null;
+    try {
+      const projectPath = req.query.project_path as string;
+      const project = projectPath ? findProjectByPath(db, projectPath) : null;
 
-    if (!project) {
-      const allProjects = listProjects(db);
-      res.json({ projects: allProjects, selectedProject: null });
-      return;
+      if (!project) {
+        const allProjects = listProjects(db);
+        res.json({ projects: allProjects, selectedProject: null });
+        return;
+      }
+
+      const scoreHistory = getScoreHistory(db, project.id, 20);
+      const violations = getOpenViolations(db, project.id, { limit: 50 });
+      const recentDecisions = getRecentDecisions(db, project.id, 10);
+      const trend = getComplianceTrend(db, project.id);
+      const violationCounts = getViolationCounts(db, project.id);
+      const suggestions = getPendingSuggestions(db, project.id);
+      const sessions = getRecentSessions(db, project.id, 20);
+
+      res.json({
+        project, scoreHistory, violations, recentDecisions,
+        trend, violationCounts, suggestions, sessions,
+      });
+    } catch (err) {
+      res.status(500).json({ error: `Dashboard data error: ${(err as Error).message}` });
     }
-
-    const scoreHistory = getScoreHistory(db, project.id, 20);
-    const violations = getOpenViolations(db, project.id, { limit: 50 });
-    const recentDecisions = getRecentDecisions(db, project.id, 10);
-    const trend = getComplianceTrend(db, project.id);
-    const violationCounts = getViolationCounts(db, project.id);
-    const suggestions = getPendingSuggestions(db, project.id);
-    const sessions = getRecentSessions(db, project.id, 20);
-
-    res.json({
-      project,
-      scoreHistory,
-      violations,
-      recentDecisions,
-      trend,
-      violationCounts,
-      suggestions,
-      sessions,
-    });
   });
 
   // Health check

@@ -23,7 +23,7 @@ interface OWASPPattern {
 const OWASP_PATTERNS: OWASPPattern[] = [
   {
     name: "Path Traversal",
-    pattern: /(?:readFile|writeFile|createReadStream|open|access)\w*\s*\([^)]*(?:req\.|params\.|query\.|body\.)/gi,
+    pattern: /(?:readFile|writeFile|createReadStream|open|access)\w*\s*\([^)]*(?:req\.(?:params|query|body)\.\w+|(?:params|query|body)\.\w+)/gi,
     severity: "critical",
     ruleId: "17-owasp-top-ten",
     description: "User input used directly in file system operation — path traversal risk (A01)",

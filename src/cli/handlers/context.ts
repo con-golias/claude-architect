@@ -5,13 +5,9 @@
  * @module context
  */
 
-import { readFileSync, existsSync } from "fs";
-import { join } from "path";
 import { getDatabase } from "../../services/sqlite/Database";
 import { findProjectByPath } from "../../services/sqlite/Projects";
 import { getOpenViolations } from "../../services/sqlite/Violations";
-import { getRulesDir } from "../../utils/paths";
-import { logger } from "../../utils/logger";
 import { getProjectPath } from "../../utils/paths";
 
 /**

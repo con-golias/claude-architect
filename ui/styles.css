@@ -1052,3 +1052,13 @@ tr:hover td { background: var(--bg-tertiary); }
   .hero-violations { flex-direction: column; }
   .score-card { flex-direction: column; text-align: center; }
 }
+
+.error-banner {
+  background: var(--danger);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  animation: fadeIn 0.3s ease;
+}

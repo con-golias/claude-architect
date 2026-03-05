@@ -34,7 +34,7 @@ export default async function handleSummarize(): Promise<void> {
 
   // Run final compliance check
   try {
-    const report = validateProject(projectPath, { severity: "warning" });
+    const report = validateProject(projectPath);
 
     // Save compliance snapshot
     saveSnapshot(db, {

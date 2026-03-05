@@ -67,7 +67,7 @@ export function trackResolution(
        resolved_violations = resolved_violations + 1,
        avg_resolution_time_ms = CASE
          WHEN avg_resolution_time_ms IS NULL THEN ?
-         ELSE (avg_resolution_time_ms + ?) / 2
+         ELSE ((avg_resolution_time_ms * resolved_violations) + ?) / (resolved_violations + 1)
        END,
        updated_at = ?
      WHERE rule_id = ? AND project_id IS ?`

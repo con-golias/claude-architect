@@ -6,7 +6,7 @@
  */
 
 import type { Database } from "bun:sqlite";
-import type { RuleMetricRecord } from "../../types/database";
+import type { RuleMetricRecord, ImprovementSuggestionRecord } from "../../types/database";
 import { getRuleMetrics, createSuggestion, getPendingSuggestions } from "../sqlite/Improvements";
 import { countSessions } from "../sqlite/Sessions";
 import { logger } from "../../utils/logger";
@@ -121,6 +121,7 @@ export function analyzeAndSuggest(
   // Pattern 4: Zero-violation rules
   const activeRuleIds = new Set(metrics.map((m) => m.rule_id));
   const allRuleIds = [
+    "00-constitution",
     "01-architecture",
     "02-security",
     "03-testing",
@@ -174,7 +175,7 @@ export function analyzeAndSuggest(
       createSuggestion(db, {
         projectId: projectId ?? undefined,
         ruleId: s.ruleId,
-        suggestionType: s.type as any,
+        suggestionType: s.type as ImprovementSuggestionRecord["suggestion_type"],
         title: s.title,
         reasoning: s.reasoning,
         evidence: s.evidence,

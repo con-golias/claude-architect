@@ -39,6 +39,12 @@ If user asks about a specific decision or event:
 architect_get_details(ids: [123, 456], type: "decisions")
 ```
 
+#### Available Templates
+Use `architect_get_templates()` to list all architecture document templates.
+Use `architect_get_templates(name)` to retrieve a specific template for creating consistent documentation:
+- ADR, MODULE-README, PROJECT_MAP, CHANGELOG, DEPENDENCY_RULES
+- UBIQUITOUS-LANGUAGE, PRIVACY-IMPACT, API-DESIGN, EVENT-SCHEMA
+
 ## Display Format
 
 ### Decisions Timeline

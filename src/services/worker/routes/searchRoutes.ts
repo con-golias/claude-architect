@@ -35,6 +35,10 @@ export function registerSearchRoutes(router: Router, db: Database): void {
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
 
     const project = projectPath ? findProjectByPath(db, projectPath) : null;
+    if (projectPath && !project) {
+      res.status(404).json({ results: [], message: "Project not found. Run /architect-init first." });
+      return;
+    }
     const projectId = project?.id;
 
     const results: SearchResultItem[] = [];

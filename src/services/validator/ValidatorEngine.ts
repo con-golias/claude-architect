@@ -79,7 +79,7 @@ export function validateProject(
     allViolations.push(...privacyResult.violations);
   }
 
-  // Run quality checks (original + concurrency + a11y + advanced)
+  // Run base quality checker (produces both quality and docs violations)
   if (
     shouldRunCategory("quality", options.categories) ||
     shouldRunCategory("docs", options.categories)
@@ -87,7 +87,10 @@ export function validateProject(
     const qualResult = checkQuality(projectPath);
     allViolations.push(...qualResult.violations);
     totalFiles = Math.max(totalFiles, qualResult.filesScanned);
+  }
 
+  // Run advanced quality checkers — only for quality category, NOT docs
+  if (shouldRunCategory("quality", options.categories)) {
     const concResult = checkConcurrency(projectPath);
     allViolations.push(...concResult.violations);
 

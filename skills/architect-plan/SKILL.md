@@ -22,8 +22,9 @@ This skill adds architecture awareness:
 Deploy subagents to:
 1. Run `architect_check` — get current compliance score and violations
 2. Run `architect_get_status` — get project health and recent decisions
-3. Search for related architectural decisions: `architect_search`
-4. Read relevant rule files for the planned work
+3. Run `architect_configure_rules(project_path, list_available: true)` — check active rules
+4. Search for related architectural decisions: `architect_search`
+5. Use `architect_get_rules(project_path, file_path)` to read relevant rule content
 
 ### Each Implementation Phase Must Include
 
@@ -32,7 +33,7 @@ Deploy subagents to:
    - Domain: entities, value objects, ports, domain services
    - Application: use cases, DTOs, mappers
    - Infrastructure: controllers, repositories, adapters
-3. **Architecture rules** — Cite specific rules from .claude/rules/
+3. **Architecture rules** — Use `architect_get_rules(project_path, file_path)` to retrieve relevant rules for the files being planned
 4. **Dependency direction check** — Verify no violations introduced
 5. **Verification checklist** — Tests + architecture compliance
 

@@ -22,6 +22,10 @@ export async function workerFetch(
       ...options,
       headers: { "Content-Type": "application/json", ...options?.headers },
     });
+    if (!res.ok) {
+      const body = await res.text();
+      return { error: `Worker API error (${res.status}): ${body}` };
+    }
     return await res.json();
   } catch (err) {
     logger.error("Worker API request failed", { path, error: (err as Error).message });
@@ -39,8 +43,11 @@ export async function handleToolCall(
       return "Use the architect tools to validate, search, and manage project architecture. Start with architect_check or architect_get_status.";
 
     case "architect_check": {
+      if (!args.project_path || typeof args.project_path !== "string") {
+        return JSON.stringify({ error: "project_path is required" });
+      }
       const params = new URLSearchParams();
-      params.set("project_path", args.project_path as string);
+      params.set("project_path", args.project_path);
       if (args.categories) params.set("categories", (args.categories as string[]).join(","));
       if (args.severity) params.set("severity", args.severity as string);
       return JSON.stringify(await workerFetch(`/api/check?${params}`), null, 2);
@@ -66,8 +73,11 @@ export async function handleToolCall(
       return JSON.stringify(await workerFetch("/api/details/batch", { method: "POST", body: JSON.stringify(args) }), null, 2);
 
     case "architect_get_status": {
+      if (!args.project_path || typeof args.project_path !== "string") {
+        return JSON.stringify({ error: "project_path is required" });
+      }
       const params = new URLSearchParams();
-      params.set("project_path", args.project_path as string);
+      params.set("project_path", args.project_path);
       return JSON.stringify(await workerFetch(`/api/status?${params}`), null, 2);
     }
 
@@ -103,10 +113,16 @@ export async function handleToolCall(
 
 /** Handle rule configuration (enable/disable manual rules) */
 async function handleConfigureRules(args: Record<string, unknown>): Promise<string> {
-  const projectPath = args.project_path as string;
-  const projectRes = await workerFetch("/api/projects") as Array<{ id: string; path: string }>;
+  const projectPath = args.project_path;
+  if (!projectPath || typeof projectPath !== "string") {
+    return JSON.stringify({ error: "project_path is required" });
+  }
+  const projectRes = await workerFetch("/api/projects");
+  if (!Array.isArray(projectRes)) {
+    return JSON.stringify({ error: "Worker API unavailable. Ensure the worker server is running." });
+  }
   const normalizedPath = projectPath.replace(/\\/g, "/");
-  const project = Array.isArray(projectRes) ? projectRes.find(p => p.path === normalizedPath) : null;
+  const project = projectRes.find((p: { id: string; path: string }) => p.path === normalizedPath);
 
   if (!project) {
     return JSON.stringify({ error: "Project not registered. Run /architect-init first." });

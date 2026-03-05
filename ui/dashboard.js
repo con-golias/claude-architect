@@ -59,6 +59,11 @@ async function loadProjects() {
     }
   } catch (err) {
     console.error('Failed to load projects:', err);
+    const banner = document.createElement('div');
+    banner.className = 'error-banner';
+    banner.textContent = 'Failed to load data. Check if the worker server is running.';
+    document.getElementById('dashboard')?.prepend(banner);
+    setTimeout(() => banner.remove(), 8000);
   }
 }
 
@@ -123,6 +128,11 @@ async function loadProject(projectPath) {
     if (activeTab === 'activity') loadActivity();
   } catch (err) {
     console.error('Failed to load project:', err);
+    const banner = document.createElement('div');
+    banner.className = 'error-banner';
+    banner.textContent = 'Failed to load data. Check if the worker server is running.';
+    document.getElementById('dashboard')?.prepend(banner);
+    setTimeout(() => banner.remove(), 8000);
   } finally {
     document.getElementById('loading').classList.add('hidden');
   }
@@ -146,15 +156,19 @@ async function runCheck() {
 function animateScore(score) {
   if (typeof score !== 'number' || isNaN(score)) return;
   const ring = document.getElementById('ring-fill');
+  if (!ring) return;
   const c = 2 * Math.PI * 52;
   ring.style.strokeDasharray = c;
   ring.style.strokeDashoffset = c - (score / 100) * c;
   ring.style.stroke = score >= 80 ? 'var(--success)' : score >= 50 ? 'var(--warning)' : 'var(--danger)';
-  document.getElementById('score-value').textContent = score;
+  const scoreValue = document.getElementById('score-value');
+  if (!scoreValue) return;
+  scoreValue.textContent = score;
 }
 
 function renderCategoryTable(scores) {
   const tbody = document.getElementById('category-body');
+  if (!tbody) return;
   tbody.innerHTML = '';
   const cats = [
     { key: 'dependency', label: 'Dependency' },
@@ -351,7 +365,13 @@ async function loadStructure() {
     tree.innerHTML = '';
     renderNode(cachedStructure, tree, 0, true);
   } catch (err) {
+    console.error('Failed to load structure:', err);
     tree.innerHTML = `<div class="empty-state">Failed to load: ${esc(err.message)}</div>`;
+    const banner = document.createElement('div');
+    banner.className = 'error-banner';
+    banner.textContent = 'Failed to load data. Check if the worker server is running.';
+    document.getElementById('dashboard')?.prepend(banner);
+    setTimeout(() => banner.remove(), 8000);
   }
 }
 
@@ -466,7 +486,13 @@ async function loadActivity() {
     cachedActivity = events;
     renderTimeline(events);
   } catch (err) {
+    console.error('Failed to load activity:', err);
     tl.innerHTML = `<div class="empty-state">Failed to load activity: ${esc(err.message)}</div>`;
+    const banner = document.createElement('div');
+    banner.className = 'error-banner';
+    banner.textContent = 'Failed to load data. Check if the worker server is running.';
+    document.getElementById('dashboard')?.prepend(banner);
+    setTimeout(() => banner.remove(), 8000);
   }
 }
 
@@ -669,16 +695,6 @@ function renderViolationDetails(v) {
   return html;
 }
 
-function formatDuration(start, end) {
-  const ms = new Date(end).getTime() - new Date(start).getTime();
-  if (ms < 0) return '';
-  const mins = Math.floor(ms / 60000);
-  if (mins < 1) return '<1 min';
-  if (mins < 60) return `${mins} min`;
-  const hrs = Math.floor(mins / 60);
-  const remainMins = mins % 60;
-  return remainMins > 0 ? `${hrs}h ${remainMins}m` : `${hrs}h`;
-}
 
 function filterActivity(type) {
   activityFilter = type;

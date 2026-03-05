@@ -57,6 +57,8 @@ const CONCURRENCY_PATTERNS: ConcurrencyPattern[] = [
   },
 ];
 
+const ASYNC_DB_IMPORTS = /(?:import|require)\s*(?:\(|.+from\s+)['"](?:@?prisma|sequelize|mongoose|typeorm|drizzle|knex|pg|mysql|better-sqlite3|mikro-orm)/;
+
 const EXCLUDE = ["node_modules", ".test.", ".spec.", "__tests__", ".d.ts", "dist/", "build/", "coverage/"];
 
 /**
@@ -85,7 +87,12 @@ export function checkConcurrency(projectPath: string): CheckerResult {
         content = readFileSync(fullPath, "utf-8");
       } catch { continue; }
 
+      const hasAsyncDb = ASYNC_DB_IMPORTS.test(content);
+
       for (const cp of CONCURRENCY_PATTERNS) {
+        // "Missing Await" only applies to files with async DB imports
+        if (cp.name === "Missing Await" && !hasAsyncDb) continue;
+
         const regex = new RegExp(cp.pattern.source, cp.pattern.flags);
         let match: RegExpExecArray | null;
 

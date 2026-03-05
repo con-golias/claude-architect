@@ -21,22 +21,34 @@ Deploy an Explore subagent to:
 - **Existing project with no structure**: Propose restructuring plan
 - **Already has src/features/**: Update rules and templates only
 
-### Step 3: Install Architecture Rules
-Use the `architect_check` MCP tool to get baseline compliance, then:
+### Step 3: Load Architecture Rules
+Use the `architect_get_rules(project_path)` MCP tool to retrieve all active architecture rules.
+- Rules are served dynamically via the Worker API — they are NOT copied to the user project
+- 26 automatic rules are always active
+- 5 manual rules can be enabled per project based on its architecture
 
-1. Copy rules from the plugin to `.claude/rules/`:
-   - All 16 rule files (architecture, security, testing, API, database, etc.)
-2. Copy templates to `docs/templates/`:
-   - ADR, MODULE-README, PROJECT_MAP, CHANGELOG, DEPENDENCY_RULES, UBIQUITOUS-LANGUAGE
-3. Create initial documentation:
+Use `architect_get_templates()` to list available document templates (ADR, MODULE-README, PROJECT_MAP, CHANGELOG, DEPENDENCY_RULES, UBIQUITOUS-LANGUAGE, PRIVACY-IMPACT, API-DESIGN, EVENT-SCHEMA), then retrieve specific templates with `architect_get_templates(name)` to create initial documentation.
+
+### Step 3.5: Configure Manual Rules
+Use `architect_configure_rules(project_path, list_available: true)` to check if any manual rules should be enabled:
+- **21-microservices**: Enable for distributed/microservice architectures
+- **23-internationalization**: Enable for multi-locale applications
+- **24-event-driven**: Enable for CQRS/event sourcing architectures
+- **25-infrastructure-as-code**: Enable if project has Terraform/K8s/Docker
+- **27-state-management**: Enable for frontend apps with complex state
+
+Enable relevant rules: `architect_configure_rules(project_path, enable: ["21-microservices"])`
+
+### Step 4: Create Initial Documentation
+1. Create initial documentation:
    - `PROJECT_MAP.md` from template (filled with detected tech stack)
    - `CHANGELOG.md` from template
    - `docs/ubiquitous-language.md` from template
    - `docs/DEPENDENCY_RULES.md` from template
    - `docs/decisions/` directory for ADRs
-4. Create a `CLAUDE.md` at project root with the constitution
+2. Create a `CLAUDE.md` at project root using `architect_get_rules(category: "constitution")`
 
-### Step 4: Register Project
+### Step 4.5: Register Project
 Use `architect_log_decision` to record:
 - Decision: "Initialize clean architecture for {project-name}"
 - Context: Current state of the project
@@ -55,7 +67,7 @@ When restructuring an existing project:
 
 ## Output
 After completion, display:
-- Installed rules count
+- Active rules count (31 total: 26 automatic + 5 manual if enabled)
 - Initial compliance score
 - Any critical violations found
 - Next steps for the user

@@ -190,9 +190,15 @@ export const MIGRATIONS: Migration[] = [
     version: 3,
     description: "Per-project manual rule configuration",
     up: (db: Database) => {
-      db.run(
-        `ALTER TABLE projects ADD COLUMN enabled_manual_rules TEXT DEFAULT '[]'`
-      );
+      const columns = db
+        .query<{ name: string }, []>("PRAGMA table_info(projects)")
+        .all()
+        .map((c) => c.name);
+      if (!columns.includes("enabled_manual_rules")) {
+        db.run(
+          `ALTER TABLE projects ADD COLUMN enabled_manual_rules TEXT DEFAULT '[]'`
+        );
+      }
     },
   },
 ];

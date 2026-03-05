@@ -123,8 +123,11 @@ export function registerArchitectRoutes(router: Router, db: Database): void {
       if (filePath && metadata.paths.length > 0) {
         const normalizedFilePath = filePath.replace(/\\/g, "/");
         const isRelevant = metadata.paths.some(p => {
-          const pattern = p.replace(/\*\*/g, ".*").replace(/\*/g, "[^/]*");
-          return new RegExp(pattern).test(normalizedFilePath);
+          const pattern = p
+            .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+            .replace(/\\\*\\\*/g, ".*")
+            .replace(/\\\*/g, "[^/]*");
+          return new RegExp(`^${pattern}$`).test(normalizedFilePath);
         });
         if (!isRelevant) continue;
       }

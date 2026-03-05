@@ -9,6 +9,7 @@ import { existsSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 import type { Violation, CheckerResult, FeatureInfo } from "../../types/validation";
 import { normalizePath, globSync } from "../../utils/paths";
+import { toKebabCase } from "../../utils/casing";
 
 const REQUIRED_FEATURE_DIRS = ["domain", "application", "infrastructure"];
 
@@ -77,12 +78,6 @@ export function checkStructure(projectPath: string): CheckerResult & {
       description: "Missing PROJECT_MAP.md at project root",
       suggestion: "Run /architect-init to generate PROJECT_MAP.md",
     });
-  }
-
-  // Check for shared directory structure
-  const sharedDir = join(projectPath, "src", "shared");
-  if (existsSync(sharedDir)) {
-    checkNamingConventions(sharedDir, projectPath, violations);
   }
 
   return { violations, filesScanned: featureDirs.length, features };
@@ -189,45 +184,4 @@ function hasColocatedTests(featurePath: string): boolean {
   }
 }
 
-/**
- * Check file naming conventions within a directory.
- *
- * @param dirPath - Directory to check
- * @param projectPath - Project root for relative paths
- * @param violations - Array to push violations into
- */
-function checkNamingConventions(
-  dirPath: string,
-  projectPath: string,
-  violations: Violation[]
-): void {
-  try {
-    const entries = globSync("**/*.{ts,tsx,js,jsx}", dirPath);
-    for (const entry of entries) {
-      if (entry.includes("node_modules")) continue;
-      const fileName = entry.split("/").pop() || "";
-      const baseName = fileName.replace(/\.(test|spec)\.(ts|tsx|js|jsx)$/, "");
 
-      // Check for PascalCase files that aren't components
-      if (/^[A-Z]/.test(baseName) && !baseName.includes(".")) {
-        // PascalCase is OK for components and classes
-        continue;
-      }
-    }
-  } catch {
-    // Glob errors are non-fatal
-  }
-}
-
-/**
- * Convert a string to kebab-case.
- *
- * @param str - Input string
- * @returns kebab-case version
- */
-function toKebabCase(str: string): string {
-  return str
-    .replace(/([a-z])([A-Z])/g, "$1-$2")
-    .replace(/[_\s]+/g, "-")
-    .toLowerCase();
-}

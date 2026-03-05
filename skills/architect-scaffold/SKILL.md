@@ -65,9 +65,12 @@ src/features/{feature-name}/
 └── README.md                       # Module manifest from template
 ```
 
+The generated README follows the MODULE-README template format. Use `architect_get_templates(name: "MODULE-README-TEMPLATE")` if customization is needed.
+
 ### Step 4: Update Project Documentation
-1. Add feature to PROJECT_MAP.md module registry
-2. Log structural change via `architect_log_decision`
+1. Use `architect_get_templates(name: "PROJECT_MAP-TEMPLATE")` to get the project map template
+2. Add the new feature to PROJECT_MAP.md using the template's module registry format
+3. Log structural change via `architect_log_decision`
 
 ### Step 5: Show Next Steps
 Tell the user:
