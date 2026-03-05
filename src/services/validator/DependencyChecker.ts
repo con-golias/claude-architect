@@ -11,6 +11,7 @@ import { readFileSync, existsSync } from "fs";
 import { join, relative } from "path";
 import type { Violation, CheckerResult } from "../../types/validation";
 import { normalizePath, globSync } from "../../utils/paths";
+import type { SourceResolution } from "../../utils/sourceResolver";
 
 const IMPORT_PATTERNS = [
   /import\s+.*from\s+['"](.+)['"]/g,
@@ -20,12 +21,7 @@ const IMPORT_PATTERNS = [
 
 type Layer = "domain" | "application" | "infrastructure" | "unknown";
 
-/**
- * Determine which architectural layer a file belongs to.
- *
- * @param filePath - Normalized file path relative to project root
- * @returns The architectural layer
- */
+/** Determine which architectural layer a file belongs to. */
 function getLayer(filePath: string): Layer {
   const parts = normalizePath(filePath).split("/");
   if (parts.includes("domain")) return "domain";
@@ -34,12 +30,7 @@ function getLayer(filePath: string): Layer {
   return "unknown";
 }
 
-/**
- * Extract the feature name from a file path.
- *
- * @param filePath - Normalized file path relative to project root
- * @returns Feature name or null if not in a feature directory
- */
+/** Extract the feature name from a file path. */
 function getFeatureName(filePath: string): string | null {
   const match = normalizePath(filePath).match(
     /src\/features\/([^/]+)\//
@@ -47,12 +38,7 @@ function getFeatureName(filePath: string): string | null {
   return match ? match[1] : null;
 }
 
-/**
- * Extract import paths from a source file.
- *
- * @param content - File content
- * @returns Array of import path strings
- */
+/** Extract import paths from a source file. */
 function extractImports(content: string): string[] {
   const imports: string[] = [];
   for (const pattern of IMPORT_PATTERNS) {
@@ -65,12 +51,7 @@ function extractImports(content: string): string[] {
   return imports;
 }
 
-/**
- * Check if an import is a relative path (not an npm package).
- *
- * @param importPath - The import path string
- * @returns True if relative
- */
+/** Check if an import is a relative path. */
 function isRelativeImport(importPath: string): boolean {
   return importPath.startsWith(".");
 }
@@ -81,11 +62,16 @@ function isRelativeImport(importPath: string): boolean {
  * @param projectPath - Absolute path to project root
  * @returns Checker result with violations found
  */
-export function checkDependencies(projectPath: string): CheckerResult {
+export function checkDependencies(projectPath: string, resolution?: SourceResolution): CheckerResult {
   const violations: Violation[] = [];
   const srcPath = join(projectPath, "src");
 
   if (!existsSync(srcPath)) {
+    return { violations: [], filesScanned: 0 };
+  }
+
+  // Only meaningful for clean architecture projects
+  if (resolution && !resolution.hasCleanArchitecture) {
     return { violations: [], filesScanned: 0 };
   }
 
@@ -130,15 +116,7 @@ export function checkDependencies(projectPath: string): CheckerResult {
   return { violations, filesScanned };
 }
 
-/**
- * Check a single import for architecture violations.
- *
- * @param sourceFile - Path of the file containing the import
- * @param importPath - The import path
- * @param sourceLayer - Layer of the importing file
- * @param sourceFeature - Feature of the importing file
- * @returns Violation if found, null otherwise
- */
+/** Check a single import for architecture violations. */
 function checkImportViolation(
   sourceFile: string,
   importPath: string,
@@ -201,12 +179,7 @@ function checkImportViolation(
   return null;
 }
 
-/**
- * Find all TypeScript/JavaScript source files recursively.
- *
- * @param dirPath - Directory to search
- * @returns Array of file paths
- */
+/** Find all TypeScript/JavaScript source files recursively. */
 function findSourceFiles(dirPath: string): string[] {
   const files: string[] = [];
   const entries = globSync("**/*.{ts,tsx,js,jsx}", dirPath);

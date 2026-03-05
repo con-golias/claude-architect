@@ -40,6 +40,8 @@ Format the results clearly:
 7. **Warning Issues**: List ALL warning violations
 8. **Info Issues**: List ALL info violations (every single one)
 
+> **Tip:** After displaying the report, remind the user: "View the interactive dashboard with charts and history at http://localhost:37778"
+
 ### Step 3: Suggest Fixes
 For each critical violation:
 - Explain what's wrong

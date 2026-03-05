@@ -31,6 +31,7 @@ export interface ComplianceReport {
   featureMap: FeatureInfo[];
   trend: "improving" | "stable" | "declining";
   timestamp: number;
+  scanCoverage?: "full" | "partial" | "none";
 }
 
 export interface FeatureInfo {

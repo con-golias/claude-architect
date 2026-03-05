@@ -21,16 +21,19 @@ afterEach(() => {
 });
 
 describe("validateProject", () => {
-  test("empty directory returns score close to 100", () => {
+  test("empty directory gets baseline violations and reduced score", () => {
     const report = validateProject(testDir);
-    expect(report.overallScore).toBeGreaterThanOrEqual(90);
-    expect(report.violations.length).toBe(0);
+    // BaselineChecker flags missing README, tests, linter, CI, gitignore
+    expect(report.violations.length).toBeGreaterThan(0);
+    expect(report.overallScore).toBeLessThan(100);
+    expect(report.scanCoverage).toBe("none");
   });
 
-  test("nonexistent directory returns score close to 100", () => {
+  test("nonexistent directory returns baseline violations", () => {
     const fakePath = join(testDir, "does-not-exist");
     const report = validateProject(fakePath);
-    expect(report.overallScore).toBeGreaterThanOrEqual(90);
+    expect(report.violations.length).toBeGreaterThan(0);
+    expect(report.overallScore).toBeLessThan(100);
   });
 
   test("report has all required fields", () => {

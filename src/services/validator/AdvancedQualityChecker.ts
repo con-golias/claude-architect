@@ -10,6 +10,8 @@ import { readFileSync } from "fs";
 import { join, relative } from "path";
 import type { Violation, CheckerResult } from "../../types/validation";
 import { normalizePath, globSync } from "../../utils/paths";
+import type { SourceResolution } from "../../utils/sourceResolver";
+import { buildGlobPattern } from "../../utils/sourceResolver";
 
 const MAX_NESTING_DEPTH = 4;
 const MAX_PARAMS = 4;
@@ -29,34 +31,38 @@ function violation(
  * Run advanced code quality checks on source files.
  *
  * @param projectPath - Absolute path to project root
+ * @param resolution - Optional source resolution for multi-directory scanning
  * @returns Checker result with quality violations
  */
-export function checkAdvancedQuality(projectPath: string): CheckerResult {
+export function checkAdvancedQuality(projectPath: string, resolution?: SourceResolution): CheckerResult {
   const violations: Violation[] = [];
-  const srcPath = join(projectPath, "src");
+  const sourceDirs = resolution?.sourceDirs ?? [join(projectPath, "src")];
+  const globPattern = buildGlobPattern(resolution?.codeExtensions ?? [".ts", ".tsx", ".js", ".jsx"]);
   let filesScanned = 0;
 
-  try {
-    const files = globSync("**/*.{ts,tsx,js,jsx}", srcPath);
+  for (const srcDir of sourceDirs) {
+    try {
+      const files = globSync(globPattern, srcDir);
 
-    for (const file of files) {
-      if (EXCLUDE.some(p => file.includes(p))) continue;
-      filesScanned++;
+      for (const file of files) {
+        if (EXCLUDE.some(p => file.includes(p))) continue;
+        filesScanned++;
 
-      const fullPath = join(srcPath, file);
-      const relativePath = normalizePath(relative(projectPath, fullPath));
+        const fullPath = join(srcDir, file);
+        const relativePath = normalizePath(relative(projectPath, fullPath));
 
-      let content: string;
-      try { content = readFileSync(fullPath, "utf-8"); } catch { continue; }
+        let content: string;
+        try { content = readFileSync(fullPath, "utf-8"); } catch { continue; }
 
-      const lines = content.split("\n");
-      checkDeepNesting(lines, relativePath, violations);
-      checkLongParamLists(content, relativePath, violations);
-      checkTodoDensity(lines, relativePath, violations);
-      checkHardcodedConfig(content, lines, relativePath, violations);
-      checkMagicNumbers(lines, relativePath, violations);
-    }
-  } catch { /* src/ doesn't exist */ }
+        const lines = content.split("\n");
+        checkDeepNesting(lines, relativePath, violations);
+        checkLongParamLists(content, relativePath, violations);
+        checkTodoDensity(lines, relativePath, violations);
+        checkHardcodedConfig(content, lines, relativePath, violations);
+        checkMagicNumbers(lines, relativePath, violations);
+      }
+    } catch { /* directory doesn't exist */ }
+  }
 
   return { violations, filesScanned };
 }

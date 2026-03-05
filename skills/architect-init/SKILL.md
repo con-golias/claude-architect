@@ -71,3 +71,4 @@ After completion, display:
 - Initial compliance score
 - Any critical violations found
 - Next steps for the user
+- Dashboard URL: "View detailed compliance dashboard at http://localhost:37778"

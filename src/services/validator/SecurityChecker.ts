@@ -9,6 +9,8 @@ import { readFileSync } from "fs";
 import { join, relative } from "path";
 import type { Violation, CheckerResult } from "../../types/validation";
 import { normalizePath, globSync, isInsideStringLiteral } from "../../utils/paths";
+import type { SourceResolution } from "../../utils/sourceResolver";
+import { buildGlobPattern } from "../../utils/sourceResolver";
 
 interface SecurityPattern {
   name: string;
@@ -122,65 +124,69 @@ const EXCLUDE_PATTERNS = [
  * Run security pattern checks on a project's source files.
  *
  * @param projectPath - Absolute path to project root
+ * @param resolution - Optional source resolution for multi-directory scanning
  * @returns Checker result with security violations
  */
-export function checkSecurity(projectPath: string): CheckerResult {
+export function checkSecurity(projectPath: string, resolution?: SourceResolution): CheckerResult {
   const violations: Violation[] = [];
-  const srcPath = join(projectPath, "src");
+  const sourceDirs = resolution?.sourceDirs ?? [join(projectPath, "src")];
+  const globPattern = buildGlobPattern(resolution?.codeExtensions ?? [".ts", ".tsx", ".js", ".jsx", ".py"]);
 
   let filesScanned = 0;
 
-  try {
-    const files = globSync("**/*.{ts,tsx,js,jsx,py}", srcPath);
+  for (const srcDir of sourceDirs) {
+    try {
+      const files = globSync(globPattern, srcDir);
 
-    for (const file of files) {
-      if (EXCLUDE_PATTERNS.some((p) => file.includes(p))) continue;
+      for (const file of files) {
+        if (EXCLUDE_PATTERNS.some((p) => file.includes(p))) continue;
 
-      filesScanned++;
-      const fullPath = join(srcPath, file);
-      const relativePath = normalizePath(relative(projectPath, fullPath));
+        filesScanned++;
+        const fullPath = join(srcDir, file);
+        const relativePath = normalizePath(relative(projectPath, fullPath));
 
-      let content: string;
-      try {
-        content = readFileSync(fullPath, "utf-8");
-      } catch {
-        continue;
-      }
+        let content: string;
+        try {
+          content = readFileSync(fullPath, "utf-8");
+        } catch {
+          continue;
+        }
 
-      const lines = content.split("\n");
+        const lines = content.split("\n");
 
-      for (const secPattern of SECURITY_PATTERNS) {
-        const regex = new RegExp(secPattern.pattern.source, secPattern.pattern.flags);
-        let match: RegExpExecArray | null;
+        for (const secPattern of SECURITY_PATTERNS) {
+          const regex = new RegExp(secPattern.pattern.source, secPattern.pattern.flags);
+          let match: RegExpExecArray | null;
 
-        while ((match = regex.exec(content)) !== null) {
-          const lineNumber = content.substring(0, match.index).split("\n").length;
-          const lineContent = lines[lineNumber - 1]?.trim() || "";
+          while ((match = regex.exec(content)) !== null) {
+            const lineNumber = content.substring(0, match.index).split("\n").length;
+            const lineContent = lines[lineNumber - 1]?.trim() || "";
 
-          // Skip if it's a comment or inside a string literal
-          if (lineContent.startsWith("//") || lineContent.startsWith("*")) {
-            continue;
+            // Skip if it's a comment or inside a string literal
+            if (lineContent.startsWith("//") || lineContent.startsWith("*")) {
+              continue;
+            }
+            const matchStartInLine = match.index - content.lastIndexOf("\n", match.index - 1) - 1;
+            if (isInsideStringLiteral(lineContent, matchStartInLine)) {
+              continue;
+            }
+
+            violations.push({
+              ruleId: "02-security",
+              ruleName: secPattern.name,
+              severity: secPattern.severity,
+              category: "security",
+              filePath: relativePath,
+              lineNumber,
+              description: secPattern.description,
+              suggestion: secPattern.suggestion,
+            });
           }
-          const matchStartInLine = match.index - content.lastIndexOf("\n", match.index - 1) - 1;
-          if (isInsideStringLiteral(lineContent, matchStartInLine)) {
-            continue;
-          }
-
-          violations.push({
-            ruleId: "02-security",
-            ruleName: secPattern.name,
-            severity: secPattern.severity,
-            category: "security",
-            filePath: relativePath,
-            lineNumber,
-            description: secPattern.description,
-            suggestion: secPattern.suggestion,
-          });
         }
       }
+    } catch {
+      // If directory doesn't exist or glob fails, skip to next
     }
-  } catch {
-    // If src/ doesn't exist or glob fails, return empty
   }
 
   return { violations, filesScanned };

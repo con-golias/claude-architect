@@ -1,11 +1,12 @@
 /**
  * Main validation orchestrator for claude-architect.
- * Combines all 10 checkers and produces a unified compliance report.
+ * Combines all checkers and produces a unified compliance report.
  *
  * @module ValidatorEngine
  */
 
 import type { ComplianceReport, Violation, FeatureInfo } from "../../types/validation";
+import { resolveSourcePaths } from "../../utils/sourceResolver";
 import { checkDependencies } from "./DependencyChecker";
 import { checkStructure } from "./StructureChecker";
 import { checkSecurity } from "./SecurityChecker";
@@ -16,6 +17,8 @@ import { checkConcurrency } from "./ConcurrencyChecker";
 import { checkAccessibility } from "./AccessibilityChecker";
 import { checkAdvancedQuality } from "./AdvancedQualityChecker";
 import { checkAPIPatterns } from "./APIPatternChecker";
+import { checkBaseline } from "./BaselineChecker";
+import { checkDocumentation } from "./DocumentationChecker";
 import { calculateOverallScore, calculateCategoryScores } from "./ComplianceScorer";
 import { logger } from "../../utils/logger";
 
@@ -31,7 +34,7 @@ interface ValidateOptions {
 
 /**
  * Run full architecture compliance validation on a project.
- * Executes all checkers and produces a unified compliance report.
+ * Detects project type once and passes resolution to all checkers.
  *
  * @param projectPath - Absolute path to project root
  * @param options - Validation options
@@ -42,40 +45,49 @@ export function validateProject(
   options: ValidateOptions = {}
 ): ComplianceReport {
   const startTime = Date.now();
-  logger.info("Starting validation", { projectPath });
+  const resolution = resolveSourcePaths(projectPath);
+  logger.info("Starting validation", {
+    projectPath,
+    projectTypes: resolution.projectTypes,
+    sourceDirs: resolution.sourceDirs.length,
+  });
 
   let allViolations: Violation[] = [];
   let features: FeatureInfo[] = [];
   let totalFiles = 0;
 
+  // Always run baseline project-level checks
+  const baselineResult = checkBaseline(projectPath);
+  allViolations.push(...baselineResult.violations);
+
   // Run dependency checks
   if (shouldRunCategory("dependency", options.categories)) {
-    const depResult = checkDependencies(projectPath);
+    const depResult = checkDependencies(projectPath, resolution);
     allViolations.push(...depResult.violations);
     totalFiles += depResult.filesScanned;
   }
 
   // Run structure checks (includes API pattern checks)
   if (shouldRunCategory("structure", options.categories)) {
-    const structResult = checkStructure(projectPath);
+    const structResult = checkStructure(projectPath, resolution);
     allViolations.push(...structResult.violations);
     features = structResult.features;
 
-    const apiResult = checkAPIPatterns(projectPath);
+    const apiResult = checkAPIPatterns(projectPath, resolution);
     allViolations.push(...apiResult.violations);
     totalFiles = Math.max(totalFiles, apiResult.filesScanned);
   }
 
   // Run security checks (original + OWASP + privacy)
   if (shouldRunCategory("security", options.categories)) {
-    const secResult = checkSecurity(projectPath);
+    const secResult = checkSecurity(projectPath, resolution);
     allViolations.push(...secResult.violations);
     totalFiles = Math.max(totalFiles, secResult.filesScanned);
 
-    const owaspResult = checkOWASP(projectPath);
+    const owaspResult = checkOWASP(projectPath, resolution);
     allViolations.push(...owaspResult.violations);
 
-    const privacyResult = checkPrivacy(projectPath);
+    const privacyResult = checkPrivacy(projectPath, resolution);
     allViolations.push(...privacyResult.violations);
   }
 
@@ -84,21 +96,31 @@ export function validateProject(
     shouldRunCategory("quality", options.categories) ||
     shouldRunCategory("docs", options.categories)
   ) {
-    const qualResult = checkQuality(projectPath);
+    const qualResult = checkQuality(projectPath, resolution);
     allViolations.push(...qualResult.violations);
     totalFiles = Math.max(totalFiles, qualResult.filesScanned);
   }
 
   // Run advanced quality checkers — only for quality category, NOT docs
   if (shouldRunCategory("quality", options.categories)) {
-    const concResult = checkConcurrency(projectPath);
+    const concResult = checkConcurrency(projectPath, resolution);
     allViolations.push(...concResult.violations);
 
-    const a11yResult = checkAccessibility(projectPath);
+    const a11yResult = checkAccessibility(projectPath, resolution);
     allViolations.push(...a11yResult.violations);
 
-    const advResult = checkAdvancedQuality(projectPath);
+    const advResult = checkAdvancedQuality(projectPath, resolution);
     allViolations.push(...advResult.violations);
+  }
+
+  // Run documentation checks
+  if (
+    shouldRunCategory("docs", options.categories) ||
+    shouldRunCategory("quality", options.categories)
+  ) {
+    const docResult = checkDocumentation(projectPath, resolution);
+    allViolations.push(...docResult.violations);
+    totalFiles = Math.max(totalFiles, docResult.filesScanned);
   }
 
   // Filter by severity if specified
@@ -110,8 +132,9 @@ export function validateProject(
     );
   }
 
-  const overallScore = calculateOverallScore(allViolations);
+  const overallScore = calculateOverallScore(allViolations, totalFiles);
   const scoresByCategory = calculateCategoryScores(allViolations);
+  const scanCoverage = totalFiles === 0 ? "none" as const : "full" as const;
 
   const duration = Date.now() - startTime;
   logger.info("Validation complete", {
@@ -119,6 +142,7 @@ export function validateProject(
     score: overallScore,
     violations: allViolations.length,
     duration,
+    scanCoverage,
   });
 
   return {
@@ -130,6 +154,7 @@ export function validateProject(
     featureMap: features,
     trend: "stable",
     timestamp: Date.now(),
+    scanCoverage,
   };
 }
 

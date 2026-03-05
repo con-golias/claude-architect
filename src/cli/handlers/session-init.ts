@@ -13,6 +13,7 @@ import { getLatestSnapshot, getComplianceTrend } from "../../services/sqlite/Com
 import { startSession } from "../../services/sqlite/Sessions";
 import { logger } from "../../utils/logger";
 import { getProjectPath } from "../../utils/paths";
+import { loadConfig } from "../../utils/config";
 import { basename } from "path";
 
 /**
@@ -48,6 +49,7 @@ export default async function handleSessionInit(): Promise<void> {
   const parts: string[] = [];
   parts.push(`# [claude-architect] project context`);
   parts.push(`Project: ${project.name} (${project.path})`);
+  parts.push(`Dashboard: http://localhost:${loadConfig().workerPort}`);
 
   if (latestSnapshot) {
     parts.push(`Compliance Score: ${latestSnapshot.overall_score}/100 (${trend})`);

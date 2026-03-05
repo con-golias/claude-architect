@@ -10,6 +10,8 @@ import { readFileSync, existsSync } from "fs";
 import { join, relative } from "path";
 import type { Violation, CheckerResult } from "../../types/validation";
 import { normalizePath, globSync, isInsideStringLiteral } from "../../utils/paths";
+import type { SourceResolution } from "../../utils/sourceResolver";
+import { buildGlobPattern } from "../../utils/sourceResolver";
 
 interface OWASPPattern {
   name: string;
@@ -69,55 +71,59 @@ const EXCLUDE = ["node_modules", ".test.", ".spec.", "__tests__", ".d.ts", "dist
  * Run OWASP Top 10 and supply chain security checks.
  *
  * @param projectPath - Absolute path to project root
+ * @param resolution - Optional source resolution for multi-directory scanning
  * @returns Checker result with OWASP violations
  */
-export function checkOWASP(projectPath: string): CheckerResult {
+export function checkOWASP(projectPath: string, resolution?: SourceResolution): CheckerResult {
   const violations: Violation[] = [];
-  const srcPath = join(projectPath, "src");
+  const sourceDirs = resolution?.sourceDirs ?? [join(projectPath, "src")];
+  const globPattern = buildGlobPattern(resolution?.codeExtensions ?? [".ts", ".tsx", ".js", ".jsx"]);
   let filesScanned = 0;
 
-  try {
-    const files = globSync("**/*.{ts,tsx,js,jsx}", srcPath);
+  for (const srcDir of sourceDirs) {
+    try {
+      const files = globSync(globPattern, srcDir);
 
-    for (const file of files) {
-      if (EXCLUDE.some(p => file.includes(p))) continue;
-      filesScanned++;
+      for (const file of files) {
+        if (EXCLUDE.some(p => file.includes(p))) continue;
+        filesScanned++;
 
-      const fullPath = join(srcPath, file);
-      const relativePath = normalizePath(relative(projectPath, fullPath));
+        const fullPath = join(srcDir, file);
+        const relativePath = normalizePath(relative(projectPath, fullPath));
 
-      let content: string;
-      try {
-        content = readFileSync(fullPath, "utf-8");
-      } catch { continue; }
+        let content: string;
+        try {
+          content = readFileSync(fullPath, "utf-8");
+        } catch { continue; }
 
-      const lines = content.split("\n");
+        const lines = content.split("\n");
 
-      for (const op of OWASP_PATTERNS) {
-        const regex = new RegExp(op.pattern.source, op.pattern.flags);
-        let match: RegExpExecArray | null;
+        for (const op of OWASP_PATTERNS) {
+          const regex = new RegExp(op.pattern.source, op.pattern.flags);
+          let match: RegExpExecArray | null;
 
-        while ((match = regex.exec(content)) !== null) {
-          const lineNumber = content.substring(0, match.index).split("\n").length;
-          const lineContent = lines[lineNumber - 1]?.trim() || "";
-          if (lineContent.startsWith("//") || lineContent.startsWith("*")) continue;
-          const pos = match.index - content.lastIndexOf("\n", match.index - 1) - 1;
-          if (isInsideStringLiteral(lineContent, pos)) continue;
+          while ((match = regex.exec(content)) !== null) {
+            const lineNumber = content.substring(0, match.index).split("\n").length;
+            const lineContent = lines[lineNumber - 1]?.trim() || "";
+            if (lineContent.startsWith("//") || lineContent.startsWith("*")) continue;
+            const pos = match.index - content.lastIndexOf("\n", match.index - 1) - 1;
+            if (isInsideStringLiteral(lineContent, pos)) continue;
 
-          violations.push({
-            ruleId: op.ruleId,
-            ruleName: op.name,
-            severity: op.severity,
-            category: "security",
-            filePath: relativePath,
-            lineNumber,
-            description: op.description,
-            suggestion: op.suggestion,
-          });
+            violations.push({
+              ruleId: op.ruleId,
+              ruleName: op.name,
+              severity: op.severity,
+              category: "security",
+              filePath: relativePath,
+              lineNumber,
+              description: op.description,
+              suggestion: op.suggestion,
+            });
+          }
         }
       }
-    }
-  } catch { /* src/ doesn't exist */ }
+    } catch { /* directory doesn't exist */ }
+  }
 
   // Supply chain checks (rule 30)
   checkSupplyChain(projectPath, violations);

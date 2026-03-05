@@ -8,6 +8,8 @@ import { readFileSync, existsSync } from "fs";
 import { join, relative, basename, dirname } from "path";
 import type { Violation, CheckerResult } from "../../types/validation";
 import { normalizePath, globSync } from "../../utils/paths";
+import type { SourceResolution } from "../../utils/sourceResolver";
+import { buildGlobPattern } from "../../utils/sourceResolver";
 
 const MAX_FILE_LINES = 200;
 const MAX_FUNCTION_LINES = 30;
@@ -18,76 +20,76 @@ const MAX_FUNCTION_LINES = 30;
  * @param projectPath - Absolute path to project root
  * @returns Checker result with quality violations
  */
-export function checkQuality(projectPath: string): CheckerResult {
+export function checkQuality(projectPath: string, resolution?: SourceResolution): CheckerResult {
   const violations: Violation[] = [];
-  const srcPath = join(projectPath, "src");
-
-  if (!existsSync(srcPath)) {
-    return { violations: [], filesScanned: 0 };
-  }
+  const sourceDirs = resolution?.sourceDirs ?? [join(projectPath, "src")];
 
   let filesScanned = 0;
-
   const missingTestFiles: string[] = [];
+  const globPattern = buildGlobPattern(resolution?.codeExtensions ?? [".ts", ".tsx", ".js", ".jsx"]);
 
-  try {
-    const files = globSync("**/*.{ts,tsx,js,jsx}", srcPath);
+  for (const srcDir of sourceDirs) {
+    if (!existsSync(srcDir)) continue;
 
-    for (const file of files) {
-      if (
-        file.includes("node_modules") ||
-        file.includes(".d.ts") ||
-        file.includes("dist/")
-      ) {
-        continue;
-      }
+    try {
+      const files = globSync(globPattern, srcDir);
 
-      filesScanned++;
-      const fullPath = join(srcPath, file);
-      const relativePath = normalizePath(relative(projectPath, fullPath));
+      for (const file of files) {
+        if (
+          file.includes("node_modules") ||
+          file.includes(".d.ts") ||
+          file.includes("dist/")
+        ) {
+          continue;
+        }
 
-      let content: string;
-      try {
-        content = readFileSync(fullPath, "utf-8");
-      } catch {
-        continue;
-      }
+        filesScanned++;
+        const fullPath = join(srcDir, file);
+        const relativePath = normalizePath(relative(projectPath, fullPath));
 
-      const lines = content.split("\n");
+        let content: string;
+        try {
+          content = readFileSync(fullPath, "utf-8");
+        } catch {
+          continue;
+        }
 
-      // Check file size
-      if (lines.length > MAX_FILE_LINES) {
-        violations.push({
-          ruleId: "15-code-style",
-          ruleName: "File Size Limit",
-          severity: "warning",
-          category: "quality",
-          filePath: relativePath,
-          description: `File has ${lines.length} lines (max ${MAX_FILE_LINES})`,
-          suggestion: `Split into smaller focused modules. Extract helper functions or sub-components.`,
-        });
-      }
+        const lines = content.split("\n");
 
-      // Check for unused imports
-      checkUnusedImports(content, relativePath, violations);
+        // Check file size
+        if (lines.length > MAX_FILE_LINES) {
+          violations.push({
+            ruleId: "15-code-style",
+            ruleName: "File Size Limit",
+            severity: "warning",
+            category: "quality",
+            filePath: relativePath,
+            description: `File has ${lines.length} lines (max ${MAX_FILE_LINES})`,
+            suggestion: `Split into smaller focused modules. Extract helper functions or sub-components.`,
+          });
+        }
 
-      // Check for commented-out code blocks
-      checkCommentedCode(content, relativePath, violations);
+        // Check for unused imports
+        checkUnusedImports(content, relativePath, violations);
 
-      // Collect missing test files (summarized later)
-      if (
-        !file.includes(".test.") &&
-        !file.includes(".spec.") &&
-        !file.includes("__tests__") &&
-        isExportingFile(content)
-      ) {
-        if (!hasTestFile(fullPath)) {
-          missingTestFiles.push(relativePath);
+        // Check for commented-out code blocks
+        checkCommentedCode(content, relativePath, violations);
+
+        // Collect missing test files (summarized later)
+        if (
+          !file.includes(".test.") &&
+          !file.includes(".spec.") &&
+          !file.includes("__tests__") &&
+          isExportingFile(content)
+        ) {
+          if (!hasTestFile(fullPath)) {
+            missingTestFiles.push(relativePath);
+          }
         }
       }
+    } catch {
+      // Glob errors are non-fatal
     }
-  } catch {
-    // Glob errors are non-fatal
   }
 
   // Add ONE summary violation for missing tests
@@ -106,13 +108,7 @@ export function checkQuality(projectPath: string): CheckerResult {
   return { violations, filesScanned };
 }
 
-/**
- * Check for unused named imports.
- *
- * @param content - File content
- * @param filePath - Relative file path
- * @param violations - Array to push violations into
- */
+/** Check for unused named imports. */
 function checkUnusedImports(
   content: string,
   filePath: string,
@@ -144,13 +140,7 @@ function checkUnusedImports(
   }
 }
 
-/**
- * Check for large blocks of commented-out code.
- *
- * @param content - File content
- * @param filePath - Relative file path
- * @param violations - Array to push violations into
- */
+/** Check for large blocks of commented-out code. */
 function checkCommentedCode(
   content: string,
   filePath: string,
@@ -183,12 +173,7 @@ function checkCommentedCode(
   }
 }
 
-/**
- * Check if a file has a corresponding test file.
- *
- * @param filePath - Absolute path to the source file
- * @returns True if a test file exists
- */
+/** Check if a file has a corresponding test file. */
 function hasTestFile(filePath: string): boolean {
   const dir = dirname(filePath);
   const base = basename(filePath);
@@ -197,12 +182,7 @@ function hasTestFile(filePath: string): boolean {
   return extensions.some((ext) => existsSync(join(dir, baseName + ext)));
 }
 
-/**
- * Check if a file exports anything (to determine if tests are expected).
- *
- * @param content - File content
- * @returns True if the file has exports
- */
+/** Check if a file exports anything (to determine if tests are expected). */
 function isExportingFile(content: string): boolean {
   return /^export\s+/m.test(content);
 }

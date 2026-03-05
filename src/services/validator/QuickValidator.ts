@@ -59,7 +59,7 @@ export function quickValidate(
   const violations: Violation[] = [];
   const fileName = basename(changedFile);
 
-  if (/\.(test|spec)\./i.test(fileName) || !/\.(ts|tsx|js|jsx)$/i.test(fileName)) {
+  if (/\.(test|spec)\./i.test(fileName) || !/\.(ts|tsx|js|jsx|py|go|rb|java|kt|cs)$/i.test(fileName)) {
     return violations;
   }
 

@@ -10,6 +10,8 @@ import { readFileSync } from "fs";
 import { join, relative } from "path";
 import type { Violation, CheckerResult } from "../../types/validation";
 import { normalizePath, globSync } from "../../utils/paths";
+import type { SourceResolution } from "../../utils/sourceResolver";
+import { buildGlobPattern } from "../../utils/sourceResolver";
 
 const EXCLUDE = ["node_modules", ".test.", ".spec.", "__tests__", ".d.ts", "dist/", "build/", "coverage/"];
 
@@ -19,36 +21,39 @@ const EXCLUDE = ["node_modules", ".test.", ".spec.", "__tests__", ".d.ts", "dist
  * @param projectPath - Absolute path to project root
  * @returns Checker result with API pattern violations
  */
-export function checkAPIPatterns(projectPath: string): CheckerResult {
+export function checkAPIPatterns(projectPath: string, resolution?: SourceResolution): CheckerResult {
   const violations: Violation[] = [];
-  const srcPath = join(projectPath, "src");
+  const sourceDirs = resolution?.sourceDirs ?? [join(projectPath, "src")];
   let filesScanned = 0;
+  const globPattern = buildGlobPattern([".ts", ".js"]);
 
-  try {
-    const files = globSync("**/*.{ts,js}", srcPath);
+  for (const srcDir of sourceDirs) {
+    try {
+      const files = globSync(globPattern, srcDir);
 
-    for (const file of files) {
-      if (EXCLUDE.some(p => file.includes(p))) continue;
+      for (const file of files) {
+        if (EXCLUDE.some(p => file.includes(p))) continue;
 
-      const fullPath = join(srcPath, file);
-      const relativePath = normalizePath(relative(projectPath, fullPath));
+        const fullPath = join(srcDir, file);
+        const relativePath = normalizePath(relative(projectPath, fullPath));
 
-      let content: string;
-      try {
-        content = readFileSync(fullPath, "utf-8");
-      } catch { continue; }
+        let content: string;
+        try {
+          content = readFileSync(fullPath, "utf-8");
+        } catch { continue; }
 
-      // Only check files that look like route/controller files
-      if (!isRouteFile(content, file)) continue;
-      filesScanned++;
+        // Only check files that look like route/controller files
+        if (!isRouteFile(content, file)) continue;
+        filesScanned++;
 
-      const lines = content.split("\n");
-      checkRouteNaming(content, lines, relativePath, violations);
-      checkInputValidation(content, lines, relativePath, violations);
-      checkErrorHandling(content, relativePath, violations);
-      checkResponseConsistency(content, lines, relativePath, violations);
-    }
-  } catch { /* src/ doesn't exist */ }
+        const lines = content.split("\n");
+        checkRouteNaming(content, lines, relativePath, violations);
+        checkInputValidation(content, lines, relativePath, violations);
+        checkErrorHandling(content, relativePath, violations);
+        checkResponseConsistency(content, lines, relativePath, violations);
+      }
+    } catch { /* directory doesn't exist */ }
+  }
 
   return { violations, filesScanned };
 }

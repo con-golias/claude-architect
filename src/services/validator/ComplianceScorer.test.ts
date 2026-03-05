@@ -25,8 +25,16 @@ function makeViolation(
 }
 
 describe("calculateOverallScore", () => {
-  test("should return 100 for zero violations", () => {
+  test("should return 100 for zero violations (no filesScanned param)", () => {
     expect(calculateOverallScore([])).toBe(100);
+  });
+
+  test("should return 50 when zero files scanned and zero violations", () => {
+    expect(calculateOverallScore([], 0)).toBe(50);
+  });
+
+  test("should return 100 when files scanned and zero violations", () => {
+    expect(calculateOverallScore([], 10)).toBe(100);
   });
 
   test("should reduce score for critical violations", () => {

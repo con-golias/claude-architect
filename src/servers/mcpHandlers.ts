@@ -40,7 +40,7 @@ export async function handleToolCall(
 ): Promise<string> {
   switch (name) {
     case "__IMPORTANT":
-      return "Use the architect tools to validate, search, and manage project architecture. Start with architect_check or architect_get_status.";
+      return `Use the architect tools to validate, search, and manage project architecture. Start with architect_check or architect_get_status. Web dashboard available at ${WORKER_BASE} for visual reports, charts, and session history.`;
 
     case "architect_check": {
       if (!args.project_path || typeof args.project_path !== "string") {

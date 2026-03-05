@@ -10,6 +10,7 @@ import { join } from "path";
 import type { Violation, CheckerResult, FeatureInfo } from "../../types/validation";
 import { normalizePath, globSync } from "../../utils/paths";
 import { toKebabCase } from "../../utils/casing";
+import type { SourceResolution } from "../../utils/sourceResolver";
 
 const REQUIRED_FEATURE_DIRS = ["domain", "application", "infrastructure"];
 
@@ -19,11 +20,25 @@ const REQUIRED_FEATURE_DIRS = ["domain", "application", "infrastructure"];
  * @param projectPath - Absolute path to project root
  * @returns Checker result with violations and feature map
  */
-export function checkStructure(projectPath: string): CheckerResult & {
+export function checkStructure(projectPath: string, resolution?: SourceResolution): CheckerResult & {
   features: FeatureInfo[];
 } {
   const violations: Violation[] = [];
   const features: FeatureInfo[] = [];
+
+  // Feature structure checks only for clean architecture projects
+  if (resolution && !resolution.hasCleanArchitecture) {
+    const gateViolations: Violation[] = [];
+    // Still check project-level files
+    if (!existsSync(join(projectPath, "tsconfig.json"))) {
+      gateViolations.push({ ruleId: "01-architecture", ruleName: "Architecture", severity: "info", category: "structure", description: "Missing tsconfig.json (TypeScript configuration)", suggestion: "Create tsconfig.json with strict mode enabled" });
+    }
+    if (!existsSync(join(projectPath, "PROJECT_MAP.md"))) {
+      gateViolations.push({ ruleId: "06-documentation", ruleName: "Documentation", severity: "info", category: "structure", description: "Missing PROJECT_MAP.md (project structure map)", suggestion: "Create PROJECT_MAP.md documenting your project structure" });
+    }
+    return { violations: gateViolations, filesScanned: 0, features: [] };
+  }
+
   const featuresDir = join(projectPath, "src", "features");
 
   if (!existsSync(featuresDir)) {
@@ -183,5 +198,3 @@ function hasColocatedTests(featurePath: string): boolean {
     return false;
   }
 }
-
-

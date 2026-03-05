@@ -9,6 +9,8 @@ import { readFileSync } from "fs";
 import { join, relative } from "path";
 import type { Violation, CheckerResult } from "../../types/validation";
 import { normalizePath, globSync } from "../../utils/paths";
+import type { SourceResolution } from "../../utils/sourceResolver";
+import { buildGlobPattern } from "../../utils/sourceResolver";
 
 interface A11yPattern {
   name: string;
@@ -71,51 +73,54 @@ const EXCLUDE = ["node_modules", ".test.", ".spec.", "__tests__", ".d.ts", "dist
  * @param projectPath - Absolute path to project root
  * @returns Checker result with accessibility violations
  */
-export function checkAccessibility(projectPath: string): CheckerResult {
+export function checkAccessibility(projectPath: string, resolution?: SourceResolution): CheckerResult {
   const violations: Violation[] = [];
-  const srcPath = join(projectPath, "src");
+  const sourceDirs = resolution?.sourceDirs ?? [join(projectPath, "src")];
   let filesScanned = 0;
+  const globPattern = buildGlobPattern(resolution?.frontendExtensions ?? [".tsx", ".jsx", ".html", ".vue"]);
 
-  try {
-    const files = globSync("**/*.{tsx,jsx,html,vue}", srcPath);
+  for (const srcDir of sourceDirs) {
+    try {
+      const files = globSync(globPattern, srcDir);
 
-    for (const file of files) {
-      if (EXCLUDE.some(p => file.includes(p))) continue;
-      filesScanned++;
+      for (const file of files) {
+        if (EXCLUDE.some(p => file.includes(p))) continue;
+        filesScanned++;
 
-      const fullPath = join(srcPath, file);
-      const relativePath = normalizePath(relative(projectPath, fullPath));
+        const fullPath = join(srcDir, file);
+        const relativePath = normalizePath(relative(projectPath, fullPath));
 
-      let content: string;
-      try {
-        content = readFileSync(fullPath, "utf-8");
-      } catch { continue; }
+        let content: string;
+        try {
+          content = readFileSync(fullPath, "utf-8");
+        } catch { continue; }
 
-      const lines = content.split("\n");
+        const lines = content.split("\n");
 
-      for (const ap of A11Y_PATTERNS) {
-        const regex = new RegExp(ap.pattern.source, ap.pattern.flags);
-        let match: RegExpExecArray | null;
+        for (const ap of A11Y_PATTERNS) {
+          const regex = new RegExp(ap.pattern.source, ap.pattern.flags);
+          let match: RegExpExecArray | null;
 
-        while ((match = regex.exec(content)) !== null) {
-          const lineNumber = content.substring(0, match.index).split("\n").length;
-          const lineContent = lines[lineNumber - 1]?.trim() || "";
-          if (lineContent.startsWith("//") || lineContent.startsWith("*") || lineContent.startsWith("{/*")) continue;
+          while ((match = regex.exec(content)) !== null) {
+            const lineNumber = content.substring(0, match.index).split("\n").length;
+            const lineContent = lines[lineNumber - 1]?.trim() || "";
+            if (lineContent.startsWith("//") || lineContent.startsWith("*") || lineContent.startsWith("{/*")) continue;
 
-          violations.push({
-            ruleId: "22-accessibility",
-            ruleName: ap.name,
-            severity: ap.severity,
-            category: "quality",
-            filePath: relativePath,
-            lineNumber,
-            description: ap.description,
-            suggestion: ap.suggestion,
-          });
+            violations.push({
+              ruleId: "22-accessibility",
+              ruleName: ap.name,
+              severity: ap.severity,
+              category: "quality",
+              filePath: relativePath,
+              lineNumber,
+              description: ap.description,
+              suggestion: ap.suggestion,
+            });
+          }
         }
       }
-    }
-  } catch { /* src/ doesn't exist */ }
+    } catch { /* directory doesn't exist */ }
+  }
 
   return { violations, filesScanned };
 }

@@ -31,7 +31,14 @@ const SEVERITY_PENALTY: Record<string, number> = {
  * @param violations - Array of detected violations
  * @returns Overall compliance score (0-100)
  */
-export function calculateOverallScore(violations: Violation[]): number {
+export function calculateOverallScore(
+  violations: Violation[],
+  totalFilesScanned?: number
+): number {
+  // Low-confidence: if nothing was scanned and no violations, cap at 50
+  if (totalFilesScanned !== undefined && totalFilesScanned === 0 && violations.length === 0) {
+    return 50;
+  }
   if (violations.length === 0) return 100;
 
   let totalPenalty = 0;

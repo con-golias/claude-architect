@@ -106,8 +106,12 @@ async function loadProject(projectPath) {
     document.getElementById('no-project').classList.add('hidden');
     document.getElementById('dashboard').classList.remove('hidden');
 
-    // Overview
-    animateScore(report.overallScore);
+    // Overview — handle scanCoverage
+    if (report.scanCoverage === 'none') {
+      animateScore(report.overallScore, true);
+    } else {
+      animateScore(report.overallScore);
+    }
     renderCategoryTable(report.scoresByCategory || {});
     renderViolationCards(report.violations || []);
     renderFeatureMap(report.featureMap || []);
@@ -153,17 +157,17 @@ async function runCheck() {
    Overview Renderers
    ════════════════════════════════════════════ */
 
-function animateScore(score) {
+function animateScore(score, lowConfidence = false) {
   if (typeof score !== 'number' || isNaN(score)) return;
   const ring = document.getElementById('ring-fill');
   if (!ring) return;
   const c = 2 * Math.PI * 52;
   ring.style.strokeDasharray = c;
   ring.style.strokeDashoffset = c - (score / 100) * c;
-  ring.style.stroke = score >= 80 ? 'var(--success)' : score >= 50 ? 'var(--warning)' : 'var(--danger)';
+  ring.style.stroke = lowConfidence ? 'var(--warning)' : score >= 80 ? 'var(--success)' : score >= 50 ? 'var(--warning)' : 'var(--danger)';
   const scoreValue = document.getElementById('score-value');
   if (!scoreValue) return;
-  scoreValue.textContent = score;
+  scoreValue.textContent = lowConfidence ? `${score}*` : score;
 }
 
 function renderCategoryTable(scores) {
