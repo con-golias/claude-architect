@@ -16,7 +16,7 @@ async function buildMcpServer(): Promise<void> {
   const result = await Bun.build({
     entrypoints: ["src/servers/mcp-server.ts"],
     outdir: SCRIPTS_DIR,
-    target: "bun",
+    target: "node",
     format: "cjs",
     naming: "mcp-server.cjs",
     minify: true,
