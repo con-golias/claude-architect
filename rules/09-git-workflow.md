@@ -1,3 +1,7 @@
+---
+mode: auto
+---
+
 ## Git Workflow & Version Control
 
 ### Branching Strategy (GitHub Flow — Simplified)

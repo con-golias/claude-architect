@@ -1,3 +1,6 @@
+---
+mode: auto
+---
 ## Code Style & Conventions
 
 ### Naming Conventions

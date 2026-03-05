@@ -161,7 +161,14 @@ export function registerDataRoutes(router: Router, db: Database): void {
   // --- Improvements ---
 
   router.get("/api/improvements", (req: Request, res: Response) => {
-    const projectId = (req.query.project_id as string) || null;
+    let projectId = (req.query.project_id as string) || null;
+    const projectPath = req.query.project_path as string;
+
+    if (!projectId && projectPath) {
+      const project = findProjectByPath(db, projectPath);
+      projectId = project?.id ?? null;
+    }
+
     res.json(getPendingSuggestions(db, projectId));
   });
 }

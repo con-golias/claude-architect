@@ -11,6 +11,7 @@ export interface ProjectRecord {
   path: string;
   tech_stack: string | null;
   architecture_pattern: string;
+  enabled_manual_rules: string;
   created_at: number;
   updated_at: number;
 }

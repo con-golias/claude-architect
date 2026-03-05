@@ -137,6 +137,15 @@ export function analyzeAndSuggest(
     "14-dependency-management",
     "15-code-style",
     "16-ci-cd",
+    "17-owasp-top-ten",
+    "18-data-privacy",
+    "19-resilience-patterns",
+    "20-concurrency",
+    "22-accessibility",
+    "26-advanced-code-quality",
+    "28-advanced-api-patterns",
+    "29-configuration-hygiene",
+    "30-supply-chain-security",
   ];
 
   if (sessionCount >= minSessions) {

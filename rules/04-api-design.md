@@ -1,4 +1,5 @@
 ---
+mode: auto
 paths:
   - "src/**/controllers/**"
   - "src/**/routes/**"

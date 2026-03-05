@@ -1,3 +1,6 @@
+---
+mode: manual
+---
 ## Microservices Architecture
 
 ### Service Boundaries (Bounded Contexts)

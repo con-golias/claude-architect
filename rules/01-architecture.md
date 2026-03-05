@@ -1,3 +1,7 @@
+---
+mode: auto
+---
+
 ## Clean Architecture — Layer Rules
 
 ### Layer Definitions & Allowed Dependencies

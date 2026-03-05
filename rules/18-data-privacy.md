@@ -1,3 +1,6 @@
+---
+mode: auto
+---
 ## Data Privacy & GDPR Compliance
 
 ### Data Classification

@@ -12,6 +12,8 @@ import { registerArchitectRoutes } from "./routes/architectRoutes";
 import { registerSearchRoutes } from "./routes/searchRoutes";
 import { registerDataRoutes } from "./routes/dataRoutes";
 import { registerDashboardRoutes } from "./routes/dashboardRoutes";
+import { registerTemplateRoutes } from "./routes/templateRoutes";
+import { registerCodeInfoRoutes } from "./routes/codeInfoRoutes";
 
 /**
  * Register all API routes on the Express app.
@@ -27,6 +29,8 @@ export function registerRoutes(app: Express): void {
   registerSearchRoutes(router, db);
   registerDataRoutes(router, db);
   registerDashboardRoutes(router, db);
+  registerTemplateRoutes(router);
+  registerCodeInfoRoutes(router);
 
   app.use(router);
 }

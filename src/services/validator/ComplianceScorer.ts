@@ -7,13 +7,13 @@
 
 import type { Violation } from "../../types/validation";
 
-/** Category weights for compliance scoring */
+/** Category weights for compliance scoring (sum = 1.0) */
 const CATEGORY_WEIGHTS: Record<string, number> = {
-  dependency: 0.3,
-  structure: 0.3,
+  dependency: 0.25,
+  structure: 0.20,
   security: 0.25,
-  quality: 0.2,
-  docs: 0.1,
+  quality: 0.20,
+  docs: 0.10,
 };
 
 /** Penalty points per severity level */

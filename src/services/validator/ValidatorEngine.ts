@@ -1,25 +1,26 @@
 /**
  * Main validation orchestrator for claude-architect.
- * Combines all checkers and produces a unified compliance report.
+ * Combines all 10 checkers and produces a unified compliance report.
  *
  * @module ValidatorEngine
  */
 
-import { readFileSync, statSync } from "fs";
-import { relative, basename, dirname } from "path";
 import type { ComplianceReport, Violation, FeatureInfo } from "../../types/validation";
 import { checkDependencies } from "./DependencyChecker";
 import { checkStructure } from "./StructureChecker";
 import { checkSecurity } from "./SecurityChecker";
 import { checkQuality } from "./QualityChecker";
-import {
-  calculateOverallScore,
-  calculateCategoryScores,
-  countBySeverity,
-  countByRule,
-} from "./ComplianceScorer";
-import { normalizePath, isInsideStringLiteral } from "../../utils/paths";
+import { checkOWASP } from "./OWASPChecker";
+import { checkPrivacy } from "./PrivacyChecker";
+import { checkConcurrency } from "./ConcurrencyChecker";
+import { checkAccessibility } from "./AccessibilityChecker";
+import { checkAdvancedQuality } from "./AdvancedQualityChecker";
+import { checkAPIPatterns } from "./APIPatternChecker";
+import { calculateOverallScore, calculateCategoryScores } from "./ComplianceScorer";
 import { logger } from "../../utils/logger";
+
+// Re-export quickValidate for backward compatibility
+export { quickValidate } from "./QuickValidator";
 
 interface ValidateOptions {
   /** Filter to specific categories */
@@ -54,21 +55,31 @@ export function validateProject(
     totalFiles += depResult.filesScanned;
   }
 
-  // Run structure checks
+  // Run structure checks (includes API pattern checks)
   if (shouldRunCategory("structure", options.categories)) {
     const structResult = checkStructure(projectPath);
     allViolations.push(...structResult.violations);
     features = structResult.features;
+
+    const apiResult = checkAPIPatterns(projectPath);
+    allViolations.push(...apiResult.violations);
+    totalFiles = Math.max(totalFiles, apiResult.filesScanned);
   }
 
-  // Run security checks
+  // Run security checks (original + OWASP + privacy)
   if (shouldRunCategory("security", options.categories)) {
     const secResult = checkSecurity(projectPath);
     allViolations.push(...secResult.violations);
     totalFiles = Math.max(totalFiles, secResult.filesScanned);
+
+    const owaspResult = checkOWASP(projectPath);
+    allViolations.push(...owaspResult.violations);
+
+    const privacyResult = checkPrivacy(projectPath);
+    allViolations.push(...privacyResult.violations);
   }
 
-  // Run quality checks
+  // Run quality checks (original + concurrency + a11y + advanced)
   if (
     shouldRunCategory("quality", options.categories) ||
     shouldRunCategory("docs", options.categories)
@@ -76,6 +87,15 @@ export function validateProject(
     const qualResult = checkQuality(projectPath);
     allViolations.push(...qualResult.violations);
     totalFiles = Math.max(totalFiles, qualResult.filesScanned);
+
+    const concResult = checkConcurrency(projectPath);
+    allViolations.push(...concResult.violations);
+
+    const a11yResult = checkAccessibility(projectPath);
+    allViolations.push(...a11yResult.violations);
+
+    const advResult = checkAdvancedQuality(projectPath);
+    allViolations.push(...advResult.violations);
   }
 
   // Filter by severity if specified
@@ -108,138 +128,6 @@ export function validateProject(
     trend: "stable",
     timestamp: Date.now(),
   };
-}
-
-/** Security patterns for quick single-file checks */
-const QUICK_SECURITY_PATTERNS = [
-  {
-    name: "Hardcoded API Key",
-    pattern: /(?:api[_-]?key|apikey)\s*[:=]\s*['"][a-zA-Z0-9_\-]{10,}['"]/gi,
-    severity: "critical" as const,
-    description: "Potential hardcoded API key detected",
-  },
-  {
-    name: "Hardcoded Secret",
-    pattern: /(?:secret|password|passwd|token|auth_token|access_token|private_key)\s*[:=]\s*['"][^'"]{8,}['"]/gi,
-    severity: "critical" as const,
-    description: "Potential hardcoded secret/password detected",
-  },
-  {
-    name: "SQL String Concatenation",
-    pattern: /(?:query|sql|exec|execute|raw|stmt|statement)\s*(?:=|:\s*|\()\s*[`'"].*\$\{.*\}.*[`'"]/gi,
-    severity: "critical" as const,
-    description: "Potential SQL injection via string interpolation",
-  },
-  {
-    name: "eval() Usage",
-    pattern: /\beval\s*\(/gi,
-    severity: "critical" as const,
-    description: "Use of eval() — code injection vulnerability",
-  },
-];
-
-/** Forbidden import directions in clean architecture */
-const FORBIDDEN_IMPORTS: Record<string, string[]> = {
-  domain: ["infrastructure", "application"],
-  application: ["infrastructure"],
-};
-
-/**
- * Run a quick, lightweight validation on a single changed file.
- * Used by PostToolUse hook for fast feedback (~10ms instead of seconds).
- *
- * @param projectPath - Absolute path to project root
- * @param changedFile - Absolute path to the specific file that changed
- * @returns Array of violations for the changed file only
- */
-export function quickValidate(
-  projectPath: string,
-  changedFile: string
-): Violation[] {
-  const violations: Violation[] = [];
-  const fileName = basename(changedFile);
-
-  // Skip test files and non-source files
-  if (/\.(test|spec)\./i.test(fileName) || !/\.(ts|tsx|js|jsx)$/i.test(fileName)) {
-    return violations;
-  }
-
-  let content: string;
-  try {
-    content = readFileSync(changedFile, "utf-8");
-  } catch {
-    return violations;
-  }
-
-  const relativePath = normalizePath(relative(projectPath, changedFile));
-  const lines = content.split("\n");
-
-  // Check 1: File size (>200 lines)
-  if (lines.length > 200) {
-    violations.push({
-      ruleId: "15-code-style",
-      ruleName: "File Too Long",
-      severity: "warning",
-      category: "quality",
-      filePath: relativePath,
-      description: `File has ${lines.length} lines (limit: 200)`,
-      suggestion: "Split into smaller, focused modules",
-    });
-  }
-
-  // Check 2: Security patterns
-  for (const sp of QUICK_SECURITY_PATTERNS) {
-    const regex = new RegExp(sp.pattern.source, sp.pattern.flags);
-    let match: RegExpExecArray | null;
-    while ((match = regex.exec(content)) !== null) {
-      const lineNumber = content.substring(0, match.index).split("\n").length;
-      const lineContent = lines[lineNumber - 1]?.trim() || "";
-      if (lineContent.startsWith("//") || lineContent.startsWith("*")) continue;
-      const matchStartInLine = match.index - content.lastIndexOf("\n", match.index - 1) - 1;
-      if (isInsideStringLiteral(lineContent, matchStartInLine)) continue;
-
-      violations.push({
-        ruleId: "02-security",
-        ruleName: sp.name,
-        severity: sp.severity,
-        category: "security",
-        filePath: relativePath,
-        lineNumber,
-        description: sp.description,
-      });
-    }
-  }
-
-  // Check 3: Dependency direction (based on file path)
-  const normalizedRelPath = normalizePath(relativePath);
-  const layerMatch = normalizedRelPath.match(/\/(?:domain|application|infrastructure)\//);
-  if (layerMatch) {
-    const currentLayer = layerMatch[0].replace(/\//g, "");
-    const forbidden = FORBIDDEN_IMPORTS[currentLayer];
-    if (forbidden) {
-      for (const line of lines) {
-        const importMatch = line.match(/(?:import|from)\s+['"]([^'"]+)['"]/);
-        if (!importMatch) continue;
-        const importPath = importMatch[1];
-        for (const forbiddenLayer of forbidden) {
-          if (importPath.includes(`/${forbiddenLayer}/`) || importPath.includes(`\\${forbiddenLayer}\\`)) {
-            violations.push({
-              ruleId: "01-architecture",
-              ruleName: "Dependency Direction",
-              severity: "critical",
-              category: "dependency",
-              filePath: relativePath,
-              description: `${currentLayer} layer imports from ${forbiddenLayer} (forbidden)`,
-              suggestion: `Define a port interface in ${currentLayer}/ and implement in ${forbiddenLayer}/`,
-            });
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  return violations;
 }
 
 /**

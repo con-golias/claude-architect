@@ -1,3 +1,6 @@
+---
+mode: auto
+---
 ## Configuration Hygiene
 
 ### No Magic Values

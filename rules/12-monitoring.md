@@ -1,3 +1,6 @@
+---
+mode: auto
+---
 ## Monitoring, Observability & Health Checks
 
 ### Health Check Endpoints

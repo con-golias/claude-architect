@@ -1,3 +1,7 @@
+---
+mode: auto
+---
+
 ## Documentation Standards
 
 ### Code Documentation

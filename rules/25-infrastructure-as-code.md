@@ -1,4 +1,5 @@
 ---
+mode: manual
 paths:
   - "Dockerfile*"
   - "docker-compose*.yml"

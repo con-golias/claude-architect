@@ -1,4 +1,5 @@
 ---
+mode: manual
 paths:
   - "src/**/*.ts"
   - "src/**/*.js"

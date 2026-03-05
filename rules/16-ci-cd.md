@@ -1,4 +1,5 @@
 ---
+mode: auto
 paths:
   - ".github/**"
   - ".gitlab-ci.yml"

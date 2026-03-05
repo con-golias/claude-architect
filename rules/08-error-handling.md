@@ -1,3 +1,7 @@
+---
+mode: auto
+---
+
 ## Error Handling & Logging Standards
 
 ### Error Handling Principles

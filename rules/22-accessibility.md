@@ -1,4 +1,5 @@
 ---
+mode: auto
 paths:
   - "src/**/*.tsx"
   - "src/**/*.jsx"

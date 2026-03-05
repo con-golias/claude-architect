@@ -1,3 +1,7 @@
+---
+mode: auto
+---
+
 ## Testing Strategy (Testing Pyramid)
 
 ### Test Ratio Target

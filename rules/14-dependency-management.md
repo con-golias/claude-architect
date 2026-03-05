@@ -1,3 +1,6 @@
+---
+mode: auto
+---
 ## Dependency Management
 
 ### Adding Dependencies

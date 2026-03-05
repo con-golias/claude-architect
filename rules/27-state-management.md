@@ -1,4 +1,5 @@
 ---
+mode: manual
 paths:
   - "src/**/*.tsx"
   - "src/**/*.jsx"

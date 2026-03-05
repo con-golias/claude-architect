@@ -36,7 +36,12 @@ export function upsertProject(
       now,
       existing.id,
     );
-    return { ...existing, name: project.name, updated_at: now };
+    return {
+      ...existing,
+      name: project.name,
+      enabled_manual_rules: existing.enabled_manual_rules ?? "[]",
+      updated_at: now,
+    };
   }
 
   db.query(
@@ -58,6 +63,7 @@ export function upsertProject(
     path: normalizedProjectPath,
     tech_stack: project.tech_stack ?? null,
     architecture_pattern: project.architecture_pattern ?? "clean",
+    enabled_manual_rules: "[]",
     created_at: now,
     updated_at: now,
   };
@@ -105,4 +111,49 @@ export function listProjects(db: Database): ProjectRecord[] {
   return db
     .query<ProjectRecord, []>("SELECT * FROM projects ORDER BY updated_at DESC")
     .all();
+}
+
+/**
+ * Get enabled manual rules for a project.
+ *
+ * @param db - Database instance
+ * @param projectId - Project UUID
+ * @returns Array of enabled manual rule IDs
+ */
+export function getEnabledManualRules(
+  db: Database,
+  projectId: string
+): string[] {
+  const row = db
+    .query<{ enabled_manual_rules: string }, [string]>(
+      "SELECT enabled_manual_rules FROM projects WHERE id = ?"
+    )
+    .get(projectId);
+
+  if (!row?.enabled_manual_rules) return [];
+
+  try {
+    const parsed = JSON.parse(row.enabled_manual_rules);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Set enabled manual rules for a project.
+ *
+ * @param db - Database instance
+ * @param projectId - Project UUID
+ * @param ruleIds - Array of manual rule IDs to enable
+ */
+export function setEnabledManualRules(
+  db: Database,
+  projectId: string,
+  ruleIds: string[]
+): void {
+  const now = Date.now();
+  db.query(
+    "UPDATE projects SET enabled_manual_rules = ?, updated_at = ? WHERE id = ?"
+  ).run(JSON.stringify(ruleIds), now, projectId);
 }

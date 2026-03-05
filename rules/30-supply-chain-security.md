@@ -1,3 +1,6 @@
+---
+mode: auto
+---
 ## Supply Chain Security
 
 ### Lockfile Integrity

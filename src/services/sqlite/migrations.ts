@@ -186,6 +186,15 @@ export const MIGRATIONS: Migration[] = [
       );
     },
   },
+  {
+    version: 3,
+    description: "Per-project manual rule configuration",
+    up: (db: Database) => {
+      db.run(
+        `ALTER TABLE projects ADD COLUMN enabled_manual_rules TEXT DEFAULT '[]'`
+      );
+    },
+  },
 ];
 
 /**

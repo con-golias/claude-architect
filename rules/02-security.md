@@ -1,3 +1,7 @@
+---
+mode: auto
+---
+
 ## Security Rules (ALWAYS ENFORCED — No Exceptions)
 
 ### Input Validation

@@ -1,3 +1,6 @@
+---
+mode: auto
+---
 ## Environment & Configuration Management
 
 ### Environment Hierarchy

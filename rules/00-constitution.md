@@ -1,3 +1,7 @@
+---
+mode: auto
+---
+
 # Architecture Rules — Project Constitution
 
 @docs/DEPENDENCY_RULES.md
