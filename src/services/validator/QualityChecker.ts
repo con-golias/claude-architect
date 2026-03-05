@@ -28,6 +28,8 @@ export function checkQuality(projectPath: string): CheckerResult {
 
   let filesScanned = 0;
 
+  const missingTestFiles: string[] = [];
+
   try {
     const files = globSync("**/*.{ts,tsx,js,jsx}", srcPath);
 
@@ -66,60 +68,79 @@ export function checkQuality(projectPath: string): CheckerResult {
         });
       }
 
-      // Check for TODO without ticket reference
-      checkTodos(content, relativePath, violations);
+      // Check for unused imports
+      checkUnusedImports(content, relativePath, violations);
 
       // Check for commented-out code blocks
       checkCommentedCode(content, relativePath, violations);
 
-      // Check for missing test file
+      // Collect missing test files (summarized later)
       if (
         !file.includes(".test.") &&
         !file.includes(".spec.") &&
         !file.includes("__tests__") &&
         isExportingFile(content)
       ) {
-        checkTestFileExists(fullPath, relativePath, violations);
+        if (!hasTestFile(fullPath)) {
+          missingTestFiles.push(relativePath);
+        }
       }
-
-      // Check for exported functions without JSDoc
-      checkMissingDocs(content, relativePath, violations);
     }
   } catch {
     // Glob errors are non-fatal
+  }
+
+  // Add ONE summary violation for missing tests
+  if (missingTestFiles.length > 0) {
+    const tested = filesScanned - missingTestFiles.length;
+    violations.push({
+      ruleId: "03-testing",
+      ruleName: "Test Coverage",
+      severity: "info",
+      category: "quality",
+      description: `No test files found (${tested} of ${filesScanned} source files have tests)`,
+      suggestion: `Create test files for: ${missingTestFiles.map(f => basename(f)).join(", ")}`,
+    });
   }
 
   return { violations, filesScanned };
 }
 
 /**
- * Check for TODO comments without ticket/issue references.
+ * Check for unused named imports.
  *
  * @param content - File content
  * @param filePath - Relative file path
  * @param violations - Array to push violations into
  */
-function checkTodos(
+function checkUnusedImports(
   content: string,
   filePath: string,
   violations: Violation[]
 ): void {
-  const todoPattern = /\/\/\s*TODO(?!\s*\(?\s*[A-Z]+-\d+)/g;
+  const importPattern = /^import\s+\{([^}]+)\}\s+from\s+['"][^'"]+['"]/gm;
   let match: RegExpExecArray | null;
 
-  while ((match = todoPattern.exec(content)) !== null) {
+  while ((match = importPattern.exec(content)) !== null) {
     const lineNumber = content.substring(0, match.index).split("\n").length;
-    violations.push({
-      ruleId: "15-code-style",
-      ruleName: "TODO Without Ticket",
-      severity: "info",
-      category: "quality",
-      filePath,
-      lineNumber,
-      description: "TODO comment without issue/ticket reference",
-      suggestion:
-        'Add a ticket reference: // TODO(JIRA-123): description',
-    });
+    const symbols = match[1].split(",").map((s) => s.trim().split(" as ").pop()!.trim()).filter(Boolean);
+    const restOfCode = content.substring(match.index + match[0].length);
+
+    for (const sym of symbols) {
+      const usagePattern = new RegExp(`\\b${sym}\\b`);
+      if (!usagePattern.test(restOfCode)) {
+        violations.push({
+          ruleId: "03-quality",
+          ruleName: "Unused Import",
+          severity: "warning",
+          category: "quality",
+          filePath,
+          lineNumber,
+          description: `Unused import ${sym}`,
+          suggestion: "Remove the import",
+        });
+      }
+    }
   }
 }
 
@@ -163,74 +184,17 @@ function checkCommentedCode(
 }
 
 /**
- * Check if a file has corresponding test file.
+ * Check if a file has a corresponding test file.
  *
  * @param filePath - Absolute path to the source file
- * @param relativePath - Relative path for violation reporting
- * @param violations - Array to push violations into
+ * @returns True if a test file exists
  */
-function checkTestFileExists(
-  filePath: string,
-  relativePath: string,
-  violations: Violation[]
-): void {
+function hasTestFile(filePath: string): boolean {
   const dir = dirname(filePath);
   const base = basename(filePath);
   const extensions = [".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx", ".test.js", ".spec.js"];
-
   const baseName = base.replace(/\.(ts|tsx|js|jsx)$/, "");
-  const hasTest = extensions.some((ext) =>
-    existsSync(join(dir, baseName + ext))
-  );
-
-  if (!hasTest) {
-    violations.push({
-      ruleId: "03-testing",
-      ruleName: "Missing Test File",
-      severity: "info",
-      category: "quality",
-      filePath: relativePath,
-      description: `No test file found for "${base}"`,
-      suggestion: `Create ${baseName}.test.ts alongside this file`,
-    });
-  }
-}
-
-/**
- * Check for exported functions/classes without JSDoc comments.
- *
- * @param content - File content
- * @param filePath - Relative path for violation reporting
- * @param violations - Array to push violations into
- */
-function checkMissingDocs(
-  content: string,
-  filePath: string,
-  violations: Violation[]
-): void {
-  const exportPattern =
-    /^export\s+(?:async\s+)?(?:function|class|const|interface|type)\s+(\w+)/gm;
-  let match: RegExpExecArray | null;
-
-  while ((match = exportPattern.exec(content)) !== null) {
-    const lineNumber = content.substring(0, match.index).split("\n").length;
-    const prevLines = content.substring(0, match.index).split("\n");
-    const prevLine = prevLines[prevLines.length - 2]?.trim() || "";
-
-    // Check if there's a JSDoc comment or regular doc comment above
-    if (!prevLine.endsWith("*/") && !prevLine.startsWith("*")) {
-      violations.push({
-        ruleId: "06-documentation",
-        ruleName: "Missing Documentation",
-        severity: "info",
-        category: "docs",
-        filePath,
-        lineNumber,
-        description: `Exported "${match[1]}" has no JSDoc/doc comment`,
-        suggestion: `Add a doc comment with @param, @returns, @throws as applicable`,
-      });
-    }
-  }
+  return extensions.some((ext) => existsSync(join(dir, baseName + ext)));
 }
 
 /**

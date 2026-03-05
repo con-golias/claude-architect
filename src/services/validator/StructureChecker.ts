@@ -34,10 +34,37 @@ export function checkStructure(projectPath: string): CheckerResult & {
     return statSync(fullPath).isDirectory() && !name.startsWith(".");
   });
 
+  const featuresMissingReadme: string[] = [];
+
   for (const featureName of featureDirs) {
     const featurePath = join(featuresDir, featureName);
-    const featureInfo = analyzeFeature(featurePath, featureName, violations);
+    const featureInfo = analyzeFeature(featurePath, featureName, violations, featuresMissingReadme);
     features.push(featureInfo);
+  }
+
+  // Add ONE summary violation for missing feature READMEs
+  if (featuresMissingReadme.length > 0) {
+    violations.push({
+      ruleId: "06-documentation",
+      ruleName: "Feature README",
+      severity: "info",
+      category: "docs",
+      description: `${featuresMissingReadme.length} feature(s) missing README.md: ${featuresMissingReadme.join(", ")}`,
+      suggestion: "Run /architect-scaffold to generate README.md from template",
+    });
+  }
+
+  // Check for tsconfig.json
+  if (!existsSync(join(projectPath, "tsconfig.json"))) {
+    violations.push({
+      ruleId: "03-quality",
+      ruleName: "TypeScript Config",
+      severity: "warning",
+      category: "quality",
+      filePath: "project root",
+      description: "Missing tsconfig.json",
+      suggestion: "Add TypeScript compiler configuration",
+    });
   }
 
   // Check for PROJECT_MAP.md
@@ -72,7 +99,8 @@ export function checkStructure(projectPath: string): CheckerResult & {
 function analyzeFeature(
   featurePath: string,
   featureName: string,
-  violations: Violation[]
+  violations: Violation[],
+  featuresMissingReadme: string[]
 ): FeatureInfo {
   const hasDomain = existsSync(join(featurePath, "domain"));
   const hasApplication = existsSync(join(featurePath, "application"));
@@ -82,32 +110,37 @@ function analyzeFeature(
     existsSync(join(featurePath, "__tests__")) ||
     hasColocatedTests(featurePath);
 
-  // Check for missing layers
-  for (const dir of REQUIRED_FEATURE_DIRS) {
-    if (!existsSync(join(featurePath, dir))) {
-      violations.push({
-        ruleId: "01-architecture",
-        ruleName: "Feature Structure",
-        severity: "warning",
-        category: "structure",
-        filePath: normalizePath(`src/features/${featureName}/`),
-        description: `Feature "${featureName}" is missing ${dir}/ directory`,
-        suggestion: `Create src/features/${featureName}/${dir}/ directory`,
-      });
-    }
+  // Check for missing layers — grouped per feature
+  const missingDirs = REQUIRED_FEATURE_DIRS.filter(
+    (dir) => !existsSync(join(featurePath, dir))
+  );
+  if (missingDirs.length === REQUIRED_FEATURE_DIRS.length) {
+    // All layers missing — flat structure
+    violations.push({
+      ruleId: "01-architecture",
+      ruleName: "Feature Structure",
+      severity: "warning",
+      category: "structure",
+      filePath: normalizePath(`src/features/${featureName}/`),
+      description: `Flat structure — no clean architecture layers`,
+      suggestion: `Scaffold domain/application/infrastructure directories`,
+    });
+  } else if (missingDirs.length > 0) {
+    // Some layers missing
+    violations.push({
+      ruleId: "01-architecture",
+      ruleName: "Feature Structure",
+      severity: "warning",
+      category: "structure",
+      filePath: normalizePath(`src/features/${featureName}/`),
+      description: `Missing ${missingDirs.join(", ")} layer${missingDirs.length > 1 ? "s" : ""}`,
+      suggestion: `Add ${missingDirs.map(d => d + "/").join(", ")} with repository adapters`,
+    });
   }
 
-  // Check for README.md
+  // Collect missing READMEs for summary violation
   if (!hasReadme) {
-    violations.push({
-      ruleId: "06-documentation",
-      ruleName: "Feature README",
-      severity: "info",
-      category: "docs",
-      filePath: normalizePath(`src/features/${featureName}/`),
-      description: `Feature "${featureName}" is missing README.md`,
-      suggestion: `Run /architect-scaffold to generate README.md from template`,
-    });
+    featuresMissingReadme.push(featureName);
   }
 
   // Check naming convention (kebab-case)

@@ -9,7 +9,7 @@ import type { Database } from "bun:sqlite";
 import { listProjects, findProjectByPath } from "../../sqlite/Projects";
 import { getRecentDecisions } from "../../sqlite/Decisions";
 import { getOpenViolations, getViolationCounts } from "../../sqlite/Violations";
-import { countSessions } from "../../sqlite/Sessions";
+import { countSessions, getRecentSessions } from "../../sqlite/Sessions";
 import {
   getLatestSnapshot,
   getScoreHistory,
@@ -77,6 +77,7 @@ export function registerDashboardRoutes(router: Router, db: Database): void {
     const trend = getComplianceTrend(db, project.id);
     const violationCounts = getViolationCounts(db, project.id);
     const suggestions = getPendingSuggestions(db, project.id);
+    const sessions = getRecentSessions(db, project.id, 20);
 
     res.json({
       project,
@@ -86,6 +87,7 @@ export function registerDashboardRoutes(router: Router, db: Database): void {
       trend,
       violationCounts,
       suggestions,
+      sessions,
     });
   });
 

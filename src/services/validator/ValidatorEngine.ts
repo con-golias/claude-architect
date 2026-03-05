@@ -114,7 +114,7 @@ export function validateProject(
 const QUICK_SECURITY_PATTERNS = [
   {
     name: "Hardcoded API Key",
-    pattern: /(?:api[_-]?key|apikey)\s*[:=]\s*['"][a-zA-Z0-9_\-]{20,}['"]/gi,
+    pattern: /(?:api[_-]?key|apikey)\s*[:=]\s*['"][a-zA-Z0-9_\-]{10,}['"]/gi,
     severity: "critical" as const,
     description: "Potential hardcoded API key detected",
   },
@@ -126,7 +126,7 @@ const QUICK_SECURITY_PATTERNS = [
   },
   {
     name: "SQL String Concatenation",
-    pattern: /(?:query|exec|execute|raw)\s*\(\s*[`'"].*\$\{.*\}.*[`'"]\s*\)/gi,
+    pattern: /(?:query|sql|exec|execute|raw|stmt|statement)\s*(?:=|:\s*|\()\s*[`'"].*\$\{.*\}.*[`'"]/gi,
     severity: "critical" as const,
     description: "Potential SQL injection via string interpolation",
   },

@@ -16,16 +16,24 @@ architect_check(project_path: "/path/to/project")
 ```
 
 ### Step 2: Display Results
+
+**CRITICAL: You MUST use the EXACT violation counts from the tool response. Do NOT group, merge, summarize, or skip any violations. The dashboard at localhost:37778 shows the same data — if your counts differ from the dashboard, users will lose trust in the plugin.**
+
+Count violations by severity directly from the `violations` array in the response:
+- Count all items where `severity === "critical"` → show as Critical count
+- Count all items where `severity === "warning"` → show as Warning count
+- Count all items where `severity === "info"` → show as Info count
+
 Format the results clearly:
 
-1. **Compliance Score**: Show as X/100 with trend indicator
-2. **Violations by Severity**:
-   - Critical (must fix immediately)
-   - Warning (should fix soon)
-   - Info (nice to have)
-3. **Category Breakdown**: Score per category (architecture, security, quality, docs)
-4. **Feature Map**: Table of features with their compliance status
-5. **Top Violations**: List the most impactful violations first
+1. **Compliance Report Header**: `## Compliance Report — {projectName}`
+2. **Score**: Show `overallScore` as X/100 with trend indicator
+3. **Violations Table**: Show the EXACT counts per severity from the tool response
+4. **Category Breakdown**: Show `scoresByCategory` values (dependency, structure, security, quality, docs)
+5. **Feature Map**: Table of `featureMap` entries with their compliance status
+6. **Critical Issues**: List ALL critical violations with file path, line number, code snippet, and suggested fix
+7. **Warning Issues**: List ALL warning violations
+8. **Info Issues**: List ALL info violations (every single one)
 
 ### Step 3: Suggest Fixes
 For each critical violation:
@@ -43,17 +51,48 @@ Call `architect_improve` to see if any self-improvement suggestions are availabl
 
 Score: 78/100 (improving ↑)
 
-### Violations
+---
+Violations
+
 | Severity | Count |
 |----------|-------|
 | Critical | 2     |
 | Warning  | 5     |
 | Info     | 8     |
 
-### Critical Issues
-1. [01-architecture] Domain imports infrastructure in src/features/auth/domain/user.ts:15
-   → Move to port interface in domain/ports/
+---
+Category Scores
 
-2. [02-security] Hardcoded API key in src/config/api.ts:23
-   → Move to environment variable
+| Category   | Score |
+|------------|-------|
+| Dependency | 100   |
+| Structure  | 75    |
+| Security   | 60    |
+| Quality    | 85    |
+| Docs       | 70    |
+
+---
+Critical Issues
+
+1. [security] Hardcoded API key — src/config/api.ts:23
+   const API_KEY = "sk-abcdef123456";
+   → Move to environment variable: process.env.API_KEY
+
+2. [security] eval() usage — src/utils/dynamic.ts:10
+   return eval(code);
+   → Remove entirely or replace with safe alternative
+
+---
+Warning Issues
+
+1. [structure] Feature "auth" missing infrastructure/ directory
+   → Create src/features/auth/infrastructure/
+
+---
+Info Issues
+
+1. [quality] Missing test file for "api.ts" — src/api.ts
+2. [quality] Missing test file for "User.ts" — src/features/auth/domain/User.ts
+3. [docs] Missing JSDoc for "login" — src/features/auth/application/LoginUseCase.ts:6
+4. [docs] Feature "auth" missing README.md
 ```

@@ -22,7 +22,7 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
   {
     name: "Hardcoded API Key",
     pattern:
-      /(?:api[_-]?key|apikey)\s*[:=]\s*['"][a-zA-Z0-9_\-]{20,}['"]/gi,
+      /(?:api[_-]?key|apikey)\s*[:=]\s*['"][a-zA-Z0-9_\-]{10,}['"]/gi,
     severity: "critical",
     description: "Potential hardcoded API key detected",
     suggestion:
@@ -40,7 +40,7 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
   {
     name: "SQL String Concatenation",
     pattern:
-      /(?:query|exec|execute|raw)\s*\(\s*[`'"].*\$\{.*\}.*[`'"]\s*\)/gi,
+      /(?:query|sql|exec|execute|raw|stmt|statement)\s*(?:=|:\s*|\()\s*[`'"].*\$\{.*\}.*[`'"]/gi,
     severity: "critical",
     description: "Potential SQL injection via string concatenation/template literals",
     suggestion:

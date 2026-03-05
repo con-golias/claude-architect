@@ -3,94 +3,207 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claude Architect — Dashboard</title>
+  <title>Claude Architect</title>
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <header>
-    <div class="logo">
-      <h1>Claude Architect</h1>
+    <div class="header-left">
+      <h1 class="logo">Claude Architect</h1>
       <span class="version">v1.0.0</span>
     </div>
-    <div id="project-selector">
+    <nav class="tab-nav hidden" id="tab-nav">
+      <button class="tab-btn active" data-tab="overview">Overview</button>
+      <button class="tab-btn" data-tab="structure">Structure</button>
+      <button class="tab-btn" data-tab="activity">Activity</button>
+    </nav>
+    <div class="header-right">
       <select id="project-select" onchange="loadProject(this.value)">
         <option value="">Select project...</option>
       </select>
+      <button id="run-check-btn" class="btn-primary" onclick="runCheck()" disabled>Run Check</button>
     </div>
   </header>
 
   <main id="dashboard" class="hidden">
-    <!-- Score Card -->
-    <section class="score-card">
-      <div class="score-gauge">
-        <div class="score-circle" id="score-circle">
-          <span class="score-value" id="score-value">--</span>
-          <span class="score-label">/ 100</span>
+
+    <!-- ═══ Tab: Overview ═══ -->
+    <div class="tab-panel active" id="tab-overview">
+
+      <!-- Hero: Score + Violation counts -->
+      <div class="hero-bar">
+        <section class="score-card">
+          <div class="score-gauge">
+            <div class="score-ring">
+              <svg viewBox="0 0 120 120">
+                <circle class="ring-bg" cx="60" cy="60" r="52" />
+                <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52" />
+              </svg>
+              <div class="score-text">
+                <span class="score-value" id="score-value">--</span>
+                <span class="score-max">/ 100</span>
+              </div>
+            </div>
+          </div>
+          <div class="score-info">
+            <h2 id="project-name">Project</h2>
+            <div class="score-meta">
+              <span id="last-checked" class="meta-item">Never checked</span>
+              <span class="trend-badge" id="trend-badge">stable</span>
+            </div>
+          </div>
+        </section>
+
+        <div class="hero-violations">
+          <div class="vcard critical">
+            <div class="vcard-icon">!</div>
+            <div class="vcard-data">
+              <span class="vcard-count" id="critical-count">0</span>
+              <span class="vcard-label">Critical</span>
+            </div>
+          </div>
+          <div class="vcard warning">
+            <div class="vcard-icon">&#9888;</div>
+            <div class="vcard-data">
+              <span class="vcard-count" id="warning-count">0</span>
+              <span class="vcard-label">Warning</span>
+            </div>
+          </div>
+          <div class="vcard info">
+            <div class="vcard-icon">i</div>
+            <div class="vcard-data">
+              <span class="vcard-count" id="info-count">0</span>
+              <span class="vcard-label">Info</span>
+            </div>
+          </div>
         </div>
-        <span class="trend" id="trend-badge">stable</span>
       </div>
-      <div class="score-meta">
-        <h2 id="project-name">Project Name</h2>
-        <p id="project-path" class="muted"></p>
-        <p id="last-checked" class="muted"></p>
+
+      <!-- Two columns: Categories + Feature Map -->
+      <div class="two-col">
+        <section class="category-card">
+          <h3>Category Breakdown</h3>
+          <table class="category-table">
+            <thead>
+              <tr><th>Category</th><th>Score</th><th></th></tr>
+            </thead>
+            <tbody id="category-body">
+              <tr><td colspan="3" class="empty-state">No data</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="section-card" id="feature-section">
+          <h3>Feature Map</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th class="center">domain</th>
+                  <th class="center">app</th>
+                  <th class="center">infra</th>
+                  <th class="center">tests</th>
+                  <th class="center">README</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="feature-body">
+                <tr><td colspan="7" class="empty-state">No features detected</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
-    </section>
 
-    <!-- Violation Summary -->
-    <section class="violation-cards">
-      <div class="card critical">
-        <span class="card-count" id="critical-count">0</span>
-        <span class="card-label">Critical</span>
+      <!-- Critical Issues -->
+      <section class="section-card severity-section" id="critical-section">
+        <h3 class="section-header critical-header">Critical Issues</h3>
+        <div id="critical-list" class="violation-list"></div>
+      </section>
+
+      <!-- Warnings -->
+      <section class="section-card severity-section" id="warning-section">
+        <h3 class="section-header warning-header">Warnings</h3>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Rule</th><th>Location</th><th>Issue</th><th>Fix</th></tr>
+            </thead>
+            <tbody id="warning-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Info -->
+      <section class="section-card severity-section" id="info-section">
+        <h3 class="section-header info-header">Info</h3>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Rule</th><th>Location</th><th>Issue</th></tr>
+            </thead>
+            <tbody id="info-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Decisions -->
+      <section class="section-card" id="decisions-section">
+        <h3>Recent Decisions</h3>
+        <div id="decisions-list" class="decisions-list"></div>
+      </section>
+
+      <!-- Suggestions (collapsible, default closed) -->
+      <section class="section-card hidden" id="suggestions-section">
+        <h3 class="toggle-header collapsed" onclick="toggleSection('suggestions-list', this)">
+          <span class="toggle-icon">&#9654;</span> Improvement Suggestions
+        </h3>
+        <div id="suggestions-list" class="collapsible collapsed"></div>
+      </section>
+    </div>
+
+    <!-- ═══ Tab: Structure ═══ -->
+    <div class="tab-panel" id="tab-structure">
+      <div class="structure-stats" id="structure-stats"></div>
+      <section class="section-card">
+        <h3>Project Tree</h3>
+        <div class="structure-tree" id="structure-tree">
+          <div class="empty-state">Select a project to view its structure</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ═══ Tab: Activity ═══ -->
+    <div class="tab-panel" id="tab-activity">
+      <div class="activity-toolbar">
+        <div class="filter-group" id="activity-filters">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="commit">Commits</button>
+          <button class="filter-btn" data-filter="session">Sessions</button>
+          <button class="filter-btn" data-filter="decision">Decisions</button>
+          <button class="filter-btn" data-filter="violation">Violations</button>
+        </div>
       </div>
-      <div class="card warning">
-        <span class="card-count" id="warning-count">0</span>
-        <span class="card-label">Warning</span>
-      </div>
-      <div class="card info">
-        <span class="card-count" id="info-count">0</span>
-        <span class="card-label">Info</span>
-      </div>
-    </section>
+      <section class="section-card">
+        <div class="activity-timeline" id="activity-timeline">
+          <div class="empty-state">No activity recorded yet</div>
+        </div>
+      </section>
+    </div>
 
-    <!-- Compliance Trend Chart -->
-    <section class="chart-section">
-      <h3>Compliance Trend</h3>
-      <canvas id="trend-chart" height="200"></canvas>
-    </section>
-
-    <!-- Violations Table -->
-    <section class="violations-section">
-      <h3>Open Violations</h3>
-      <table id="violations-table">
-        <thead>
-          <tr>
-            <th>Severity</th>
-            <th>Rule</th>
-            <th>Description</th>
-            <th>File</th>
-          </tr>
-        </thead>
-        <tbody id="violations-body"></tbody>
-      </table>
-    </section>
-
-    <!-- Recent Decisions -->
-    <section class="decisions-section">
-      <h3>Recent Decisions</h3>
-      <div id="decisions-list"></div>
-    </section>
-
-    <!-- Improvement Suggestions -->
-    <section class="suggestions-section" id="suggestions-section" class="hidden">
-      <h3>Improvement Suggestions</h3>
-      <div id="suggestions-list"></div>
-    </section>
   </main>
 
-  <div id="no-project" class="center-message">
-    <h2>Select a project to view its architecture dashboard</h2>
+  <!-- No project selected -->
+  <div id="no-project" class="empty-hero">
+    <div class="empty-icon">&#9881;</div>
+    <h2>Select a project</h2>
     <p>Run <code>/architect-init</code> in Claude Code to register a project</p>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="loading" class="loading hidden">
+    <div class="spinner"></div>
   </div>
 
   <script src="dashboard.js"></script>
