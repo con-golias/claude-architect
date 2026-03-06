@@ -56,11 +56,13 @@ describe("calculateOverallScore", () => {
     expect(calculateOverallScore(warning)).toBeLessThan(calculateOverallScore(info));
   });
 
-  test("should never go below 0", () => {
+  test("overall = weighted average of category scores even with many violations", () => {
+    // 100 critical in security → security=0, others=100
+    // Overall = 0.25×0 + 0.20×100 + 0.25×100 + 0.20×100 + 0.10×100 = 75
     const many = Array.from({ length: 100 }, () =>
       makeViolation({ severity: "critical", category: "security" })
     );
-    expect(calculateOverallScore(many)).toBe(0);
+    expect(calculateOverallScore(many)).toBe(75);
   });
 
   test("should apply category weights", () => {
@@ -68,6 +70,26 @@ describe("calculateOverallScore", () => {
     const docs = [makeViolation({ severity: "warning", category: "docs" })];
     // Security weight (0.25) > docs weight (0.10), so security violation has more impact
     expect(calculateOverallScore(security)).toBeLessThan(calculateOverallScore(docs));
+  });
+
+  test("overall score matches weighted average of category breakdown", () => {
+    // Mix of violations across categories
+    const violations = [
+      makeViolation({ severity: "critical", category: "security" }),
+      makeViolation({ severity: "critical", category: "security" }),
+      makeViolation({ severity: "warning", category: "quality" }),
+      makeViolation({ severity: "warning", category: "quality" }),
+      makeViolation({ severity: "info", category: "docs" }),
+    ];
+    const overall = calculateOverallScore(violations);
+    const cats = calculateCategoryScores(violations);
+    // Manual: dep=100, struct=100, sec=80, quality=94, docs=99
+    // Weighted: 0.25×100 + 0.20×100 + 0.25×80 + 0.20×94 + 0.10×99 = 25+20+20+18.8+9.9 = 93.7 → 94
+    const expected = Math.round(
+      0.25 * cats.dependency + 0.20 * cats.structure +
+      0.25 * cats.security + 0.20 * cats.quality + 0.10 * cats.docs
+    );
+    expect(overall).toBe(expected);
   });
 });
 

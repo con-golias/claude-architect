@@ -24,9 +24,8 @@ const SEVERITY_PENALTY: Record<string, number> = {
 };
 
 /**
- * Calculate overall compliance score from a list of violations.
- * Score starts at 100 and is reduced by weighted violation penalties.
- * Minimum score is 0.
+ * Calculate overall compliance score as weighted average of category scores.
+ * This ensures the overall score is always consistent with the category breakdown.
  *
  * @param violations - Array of detected violations
  * @returns Overall compliance score (0-100)
@@ -41,15 +40,13 @@ export function calculateOverallScore(
   }
   if (violations.length === 0) return 100;
 
-  let totalPenalty = 0;
-
-  for (const v of violations) {
-    const weight = CATEGORY_WEIGHTS[v.category] ?? 0.15;
-    const penalty = SEVERITY_PENALTY[v.severity] ?? 1;
-    totalPenalty += penalty * weight;
+  const categoryScores = calculateCategoryScores(violations);
+  let weighted = 0;
+  for (const [category, weight] of Object.entries(CATEGORY_WEIGHTS)) {
+    weighted += (categoryScores[category] ?? 100) * weight;
   }
 
-  return Math.max(0, Math.round(100 - totalPenalty));
+  return Math.round(weighted);
 }
 
 /**

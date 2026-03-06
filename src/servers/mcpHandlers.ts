@@ -1,33 +1,84 @@
 /**
  * MCP tool call handlers for claude-architect.
  * Routes tool calls to the Worker HTTP API.
+ * Auto-starts the worker if it's not running.
  *
  * @module mcpHandlers
  */
 
+import { spawn } from "child_process";
+import { dirname, join } from "path";
 import { logger } from "../utils/logger";
 import { loadConfig } from "../utils/config";
 
 const config = loadConfig();
 const WORKER_BASE = `http://localhost:${config.workerPort}`;
+const DASHBOARD_URL = `http://localhost:${config.workerPort}`;
 
-/** Make HTTP requests to the Worker API */
+/** Scripts directory — derived from process.argv[1] (the running .cjs file) */
+const SCRIPTS_DIR = dirname(process.argv[1] || __dirname);
+
+let autoStartAttempted = false;
+
+/** Try to auto-start the worker server if it's not running. */
+async function tryAutoStartWorker(): Promise<boolean> {
+  if (autoStartAttempted) return false;
+  autoStartAttempted = true;
+  logger.info("Worker not running — attempting auto-start");
+  try {
+    const bunRunner = join(SCRIPTS_DIR, "bun-runner.cjs");
+    const child = spawn("node", [bunRunner, "worker-service.cjs", "start"], {
+      stdio: "ignore",
+      detached: true,
+      cwd: join(SCRIPTS_DIR, ".."),
+    });
+    child.unref();
+    for (let i = 0; i < 20; i++) {
+      await new Promise((r) => setTimeout(r, 500));
+      try {
+        const res = await fetch(`${WORKER_BASE}/api/health`);
+        if (res.ok) { logger.info("Worker auto-started successfully"); return true; }
+      } catch { /* polling */ }
+    }
+  } catch (err) {
+    logger.error("Auto-start failed", { error: (err as Error).message });
+  }
+  return false;
+}
+
+/** Make HTTP requests to the Worker API. Auto-starts worker on first failure. */
 export async function workerFetch(
   path: string,
   options?: RequestInit
 ): Promise<unknown> {
   const url = `${WORKER_BASE}${path}`;
+  const fetchOpts = {
+    ...options,
+    headers: { "Content-Type": "application/json", ...options?.headers },
+  };
   try {
-    const res = await fetch(url, {
-      ...options,
-      headers: { "Content-Type": "application/json", ...options?.headers },
-    });
+    const res = await fetch(url, fetchOpts);
     if (!res.ok) {
       const body = await res.text();
       return { error: `Worker API error (${res.status}): ${body}` };
     }
     return await res.json();
   } catch (err) {
+    // Worker unreachable — try auto-start and retry once
+    const started = await tryAutoStartWorker();
+    if (started) {
+      try {
+        const res = await fetch(url, fetchOpts);
+        if (!res.ok) {
+          const body = await res.text();
+          return { error: `Worker API error (${res.status}): ${body}` };
+        }
+        return await res.json();
+      } catch (retryErr) {
+        logger.error("Worker API retry failed", { path, error: (retryErr as Error).message });
+        return { error: `Worker unavailable after auto-start: ${(retryErr as Error).message}` };
+      }
+    }
     logger.error("Worker API request failed", { path, error: (err as Error).message });
     return { error: `Worker API unavailable: ${(err as Error).message}` };
   }
@@ -40,7 +91,7 @@ export async function handleToolCall(
 ): Promise<string> {
   switch (name) {
     case "__IMPORTANT":
-      return `Use the architect tools to validate, search, and manage project architecture. Start with architect_check or architect_get_status. Web dashboard available at ${WORKER_BASE} for visual reports, charts, and session history.`;
+      return `Architecture enforcement plugin active. Tools: architect_check, architect_get_status, architect_scaffold, architect_search, architect_log_decision, architect_get_rules, architect_improve, architect_get_templates, architect_configure_rules.\n\nIMPORTANT: Always tell the user about the live dashboard at ${DASHBOARD_URL} when presenting architecture results.`;
 
     case "architect_check": {
       if (!args.project_path || typeof args.project_path !== "string") {
@@ -50,7 +101,9 @@ export async function handleToolCall(
       params.set("project_path", args.project_path);
       if (args.categories) params.set("categories", (args.categories as string[]).join(","));
       if (args.severity) params.set("severity", args.severity as string);
-      return JSON.stringify(await workerFetch(`/api/check?${params}`), null, 2);
+      const result = await workerFetch(`/api/check?${params}`);
+      return JSON.stringify(result, null, 2) +
+        `\n\n[Live dashboard with full details: ${DASHBOARD_URL}]`;
     }
 
     case "architect_scaffold":
@@ -78,7 +131,9 @@ export async function handleToolCall(
       }
       const params = new URLSearchParams();
       params.set("project_path", args.project_path);
-      return JSON.stringify(await workerFetch(`/api/status?${params}`), null, 2);
+      const statusResult = await workerFetch(`/api/status?${params}`);
+      return JSON.stringify(statusResult, null, 2) +
+        `\n\n[Live dashboard: ${DASHBOARD_URL}]`;
     }
 
     case "architect_get_rules": {

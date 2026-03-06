@@ -19,54 +19,65 @@ import { basename } from "path";
 /**
  * Handle session initialization.
  * Outputs context string for Claude to use.
+ * Wrapped in try/catch — always outputs at minimum the dashboard URL.
  */
 export default async function handleSessionInit(): Promise<void> {
-  const projectPath = getProjectPath();
-  const db = getDatabase();
+  const dashboardUrl = `http://localhost:${loadConfig().workerPort}`;
 
-  // Register or update project
-  let project = findProjectByPath(db, projectPath);
-  if (!project) {
-    const projectName = basename(projectPath);
-    project = upsertProject(db, {
-      id: crypto.randomUUID(),
-      name: projectName,
-      path: projectPath,
-    });
-    logger.info("New project registered", { name: projectName, path: projectPath });
-  }
+  try {
+    const projectPath = getProjectPath();
+    const db = getDatabase();
 
-  // Start session
-  const sessionId = process.env.CLAUDE_SESSION_ID || crypto.randomUUID();
-  const latestSnapshot = getLatestSnapshot(db, project.id);
-  startSession(db, sessionId, project.id, latestSnapshot?.overall_score);
+    // Register or update project
+    let project = findProjectByPath(db, projectPath);
+    if (!project) {
+      const projectName = basename(projectPath);
+      project = upsertProject(db, {
+        id: crypto.randomUUID(),
+        name: projectName,
+        path: projectPath,
+      });
+      logger.info("New project registered", { name: projectName, path: projectPath });
+    }
 
-  // Build context summary
-  const violations = getViolationCounts(db, project.id);
-  const trend = getComplianceTrend(db, project.id);
-  const recentDecisions = getRecentDecisions(db, project.id, 3);
+    // Start session
+    const sessionId = process.env.CLAUDE_SESSION_ID || crypto.randomUUID();
+    const latestSnapshot = getLatestSnapshot(db, project.id);
+    startSession(db, sessionId, project.id, latestSnapshot?.overall_score);
 
-  const parts: string[] = [];
-  parts.push(`# [claude-architect] project context`);
-  parts.push(`Project: ${project.name} (${project.path})`);
-  parts.push(`Dashboard: http://localhost:${loadConfig().workerPort}`);
+    // Build context summary
+    const violations = getViolationCounts(db, project.id);
+    const trend = getComplianceTrend(db, project.id);
+    const recentDecisions = getRecentDecisions(db, project.id, 3);
 
-  if (latestSnapshot) {
-    parts.push(`Compliance Score: ${latestSnapshot.overall_score}/100 (${trend})`);
-  }
+    const parts: string[] = [];
+    parts.push(`# [claude-architect] project context`);
+    parts.push(`Project: ${project.name} (${project.path})`);
+    parts.push(`Dashboard: ${dashboardUrl}`);
 
-  if (violations.critical > 0 || violations.warning > 0) {
-    parts.push(
-      `Open Violations: ${violations.critical} critical, ${violations.warning} warning, ${violations.info} info`
+    if (latestSnapshot) {
+      parts.push(`Compliance Score: ${latestSnapshot.overall_score}/100 (${trend})`);
+    }
+
+    if (violations.critical > 0 || violations.warning > 0) {
+      parts.push(
+        `Open Violations: ${violations.critical} critical, ${violations.warning} warning, ${violations.info} info`
+      );
+    }
+
+    if (recentDecisions.length > 0) {
+      parts.push(`\nRecent Decisions:`);
+      for (const d of recentDecisions) {
+        parts.push(`- [${d.status}] ${d.title}`);
+      }
+    }
+
+    process.stdout.write(parts.join("\n"));
+  } catch (err) {
+    // Always output at least the dashboard URL even on failure
+    logger.error("session-init failed", { error: (err as Error).message });
+    process.stdout.write(
+      `# [claude-architect] Dashboard: ${dashboardUrl}\nSession init encountered an error — dashboard and tools still available.`
     );
   }
-
-  if (recentDecisions.length > 0) {
-    parts.push(`\nRecent Decisions:`);
-    for (const d of recentDecisions) {
-      parts.push(`- [${d.status}] ${d.title}`);
-    }
-  }
-
-  process.stdout.write(parts.join("\n"));
 }
