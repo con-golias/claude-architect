@@ -5,6 +5,7 @@
 
 import { existsSync, mkdirSync } from "fs";
 import path from "path";
+import { buildIndex } from "./src/services/kb/KbIndexBuilder";
 
 const SCRIPTS_DIR = path.resolve("scripts");
 
@@ -50,10 +51,35 @@ async function buildWorkerService(): Promise<void> {
   console.log("Built: scripts/worker-service.cjs");
 }
 
+function buildKbIndex(): void {
+  const kbDir = path.resolve("software-engineering-kb");
+  if (!existsSync(kbDir)) {
+    console.log("Skipped: KB index (no software-engineering-kb/ directory)");
+    return;
+  }
+
+  const dataDir = path.join(
+    process.env.HOME || process.env.USERPROFILE || "~",
+    ".claude-architect",
+  );
+  if (!existsSync(dataDir)) {
+    mkdirSync(dataDir, { recursive: true });
+  }
+  const indexPath = path.join(dataDir, "kb-index.json");
+
+  const stats = buildIndex(kbDir, indexPath);
+  console.log(
+    `Built: KB index (${stats.totalEntries} entries, ${stats.sizeKB}KB, ${stats.buildTimeMs}ms)`,
+  );
+}
+
 async function main(): Promise<void> {
   console.log("Building claude-architect plugin...\n");
 
   await Promise.all([buildMcpServer(), buildWorkerService()]);
+
+  // Build KB index sequentially (after bundles, uses source imports)
+  buildKbIndex();
 
   console.log("\nBuild complete!");
 }

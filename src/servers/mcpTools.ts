@@ -159,4 +159,30 @@ export const TOOLS = [
       required: ["project_path"],
     },
   },
+  {
+    name: "kb_lookup",
+    description: "Find relevant software engineering KB articles for a coding context. Returns ranked entries with directives, best practices, and imperatives.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        file_path: { type: "string", description: "Target file path for context-based lookup" },
+        query: { type: "string", description: "Free-text search query (e.g., 'sql injection prevention')" },
+        category: { type: "string", description: "Filter by category (e.g., 'security', 'frontend', 'backend')" },
+        language: { type: "string", description: "Filter by language (e.g., 'typescript', 'python')" },
+        limit: { type: "number", description: "Max results (default 5, max 50)" },
+      },
+    },
+  },
+  {
+    name: "kb_read",
+    description: "Read full content of a specific KB article. Use after kb_lookup to get detailed guidance.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        id: { type: "string", description: "KB article ID (e.g., '08-security/secure-coding/injection-prevention')" },
+        sections: { type: "string", description: "Comma-separated section names to filter (e.g., 'best practices,anti-patterns')" },
+      },
+      required: ["id"],
+    },
+  },
 ];

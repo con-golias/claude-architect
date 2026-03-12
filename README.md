@@ -1,30 +1,51 @@
 # Claude Architect
 
-**Enterprise architecture enforcement plugin for Claude Code — transforms vibe coding into professional-grade development.**
+**Knowledge-guided architecture plugin for Claude Code — transforms AI coding from guesswork into expertise-driven development.**
 
-Stop producing spaghetti code with AI. Claude Architect enforces clean architecture, tracks architectural decisions, validates compliance, and self-improves — all automatically, on every session.
+Claude Architect gives Claude Code access to a curated knowledge base of 1009 software engineering articles. Instead of relying on training data alone, Claude consults proven best practices, security guidelines, and design patterns before writing code. The result: code that's correct from the start.
+
+## How It Works
+
+```
+You: "Build a notes app with authentication"
+
+Claude Code (with Claude Architect):
+  1. Reads your code thoroughly
+  2. Searches 1009 KB articles for relevant guidance
+  3. Applies best practices from KB (marked with [KB])
+  4. Uses own expertise for everything else
+  5. Shows you what was KB-guided vs own judgment
+```
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| **Architecture Enforcement** | 16 rule files covering clean architecture, SOLID, security, testing, API design, and more |
-| **Compliance Scoring** | 0-100 score with category breakdown (architecture, security, quality, docs) |
-| **Violation Detection** | Catches dependency direction violations, security anti-patterns, missing tests and docs |
+| **Knowledge Base (1009 articles)** | Curated software engineering guidance covering security, architecture, frontend, backend, databases, testing, DevOps, accessibility, and more |
+| **Smart KB Lookup** | Multi-signal ranking engine matches articles to your code context using file extension, path patterns, content analysis, and query terms |
+| **PreToolUse Hook** | Automatically injects relevant KB guidance before every file write/edit |
+| **Architecture Enforcement** | 31 rule files (26 auto, 5 manual) covering clean architecture, SOLID, security, testing, API design |
+| **Compliance Scoring** | 0-100 weighted score with category breakdown (dependency, structure, security, quality, docs) |
+| **Violation Detection** | 12 validators catch security anti-patterns, dependency violations, accessibility issues, and more |
 | **Decision Tracking** | Persistent ADR database — every architectural decision is recorded and searchable |
-| **Feature Scaffolding** | Generate correct clean architecture structure (domain/application/infrastructure) |
-| **Project Memory** | SQLite database stores decisions, violations, compliance history per project |
-| **Self-Improvement** | Learns from violation patterns and suggests rule modifications |
-| **Web Dashboard** | Localhost UI showing compliance trends, violations, decisions timeline |
-| **Lifecycle Hooks** | Automatic context loading, violation detection on file writes, session summaries |
+| **Feature Scaffolding** | Generate clean architecture structure (domain/application/infrastructure) |
+| **Web Dashboard** | Live dashboard at `http://localhost:37778` showing scores, violations, decisions |
+| **Self-Improvement** | Learns from violation patterns and suggests rule modifications after 5+ sessions |
 
 ## Quick Start
 
-### Quick Start (Development)
+### Development
 
 ```bash
 # Clone the repository
 git clone https://github.com/con-golias/claude-architect.git
+cd claude-architect
+
+# Install dependencies
+bun install
+
+# Build (produces MCP server + Worker + KB index)
+bun run build
 
 # Load as plugin for current session
 claude --plugin-dir /path/to/claude-architect
@@ -33,26 +54,85 @@ claude --plugin-dir /path/to/claude-architect
 ### Permanent Installation
 
 ```bash
-# Add as a local marketplace, then install
 /plugin marketplace add /path/to/claude-architect
 /plugin install claude-architect
 ```
 
-### Then
+### Usage
 
 ```bash
 # Open any project with Claude Code
 claude
 
-# Initialize architecture for your project
+# The plugin activates automatically:
+# - KB system loads (1009 articles)
+# - Dashboard starts at http://localhost:37778
+# - Every code analysis consults the KB
+
+# Initialize architecture rules for your project
 /architect-init
 
-# Check compliance at any time
+# Check compliance
 /architect-check
 
-# Create a new feature with proper structure
-/architect-scaffold
+# Manually search the KB
+# (Claude also does this automatically)
+kb_lookup(query: "authentication best practices")
+kb_read(id: "08-security/authentication/jwt-tokens")
 ```
+
+## Knowledge Base
+
+The KB contains 1009 markdown articles organized in 17 categories:
+
+| Category | Articles | Covers |
+|----------|----------|--------|
+| Fundamentals | 186 | Clean code, SOLID, design patterns, data structures |
+| Backend | 129 | REST, GraphQL, gRPC, WebSockets, microservices |
+| Security | 95 | OWASP, XSS prevention, injection, authentication, encryption |
+| Project Structure | 84 | Express, Next.js, Django, Flutter, mobile, desktop |
+| Frontend | 80 | React, Angular, Vue, state management, accessibility |
+| Database | 75 | SQL, NoSQL, data modeling, migrations, query optimization |
+| Languages | 56 | TypeScript, Python, Go, Rust, Java, C#, Swift |
+| DevOps | 50 | CI/CD, Docker, Kubernetes, monitoring, infrastructure |
+| Performance | 49 | Caching, lazy loading, N+1 prevention, profiling |
+| Architecture | 42 | Clean architecture, DDD, event-driven, CQRS |
+| Testing | 34 | Unit, integration, E2E, TDD, mocking strategies |
+| Scalability | 34 | Horizontal scaling, load balancing, message queues |
+| Code Quality | 29 | Linting, formatting, code review, refactoring |
+| Product | 21 | Requirements, user stories, agile, documentation |
+| Case Studies | 20 | Real-world architecture decisions and patterns |
+| AI | 13 | AI-generated code security, prompt engineering |
+| Accessibility | 10 | WCAG compliance, semantic HTML, ARIA |
+
+### KB Workflow
+
+The plugin follows a strict workflow to ensure thorough analysis:
+
+1. **Analyze first** — Claude examines your code thoroughly, finding ALL issues
+2. **Consult KB** — Searches for guidance on the specific issues found
+3. **Fix with KB** — Applies KB recommendations (marked with `[KB]`)
+4. **Fix with expertise** — Handles remaining issues using own judgment
+
+This order is critical. The KB enhances Claude's analysis — it doesn't replace it.
+
+## MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `kb_lookup` | Find relevant KB articles by file path, query, category, or language |
+| `kb_read` | Read full content of a specific KB article |
+| `architect_check` | Validate project compliance (score + violations) |
+| `architect_scaffold` | Generate feature folder structure |
+| `architect_log_decision` | Record an architectural decision (ADR) |
+| `architect_search` | Search decisions, violations, history |
+| `architect_timeline` | Get chronological context around events |
+| `architect_get_details` | Fetch full details for specific IDs |
+| `architect_get_status` | Project health dashboard |
+| `architect_get_rules` | Get relevant rules for current context |
+| `architect_improve` | Self-improvement analysis |
+| `architect_get_templates` | List or retrieve document templates |
+| `architect_configure_rules` | Enable/disable manual architecture rules |
 
 ## Skills (Slash Commands)
 
@@ -63,139 +143,107 @@ claude
 | `/architect-plan` | Create architecture-aware implementation plans |
 | `/architect-history` | View decisions, compliance trends, violation patterns |
 | `/architect-scaffold` | Generate feature with domain/application/infrastructure layers |
+| `/architect-templates` | List and retrieve architecture document templates |
+| `/architect-configure-rules` | Configure which rules are active |
 
-## MCP Tools
-
-| Tool | Description |
-|------|-------------|
-| `architect_check` | Validate project compliance (score + violations) |
-| `architect_scaffold` | Generate feature folder structure |
-| `architect_log_decision` | Record an architectural decision (ADR) |
-| `architect_search` | Search decisions, violations, history |
-| `architect_timeline` | Get chronological context around events |
-| `architect_get_details` | Fetch full details for specific IDs |
-| `architect_get_status` | Project health dashboard |
-| `architect_get_rules` | Get relevant rules for current context |
-| `architect_improve` | Self-improvement analysis |
-
-## Architecture Rules (16 Rule Files)
-
-| Rule | Domain |
-|------|--------|
-| 00-constitution | Root architecture rules, SOLID principles, mandatory checklist |
-| 01-architecture | Clean architecture layers, feature structure, use case pattern |
-| 02-security | OWASP Top 10, input validation, auth, secrets management |
-| 03-testing | Testing pyramid (70/20/10), coverage standards |
-| 04-api-design | REST standards, pagination, versioning, error formats |
-| 05-database | Migrations, query safety, schema design, connection pooling |
-| 06-documentation | JSDoc, ADRs, module READMEs, PROJECT_MAP, CHANGELOG |
-| 07-performance | N+1 prevention, caching, timeouts, lazy loading |
-| 08-error-handling | Error hierarchy, structured logging, correlation IDs |
-| 09-git-workflow | Conventional commits, branch strategy, PR standards |
-| 10-frontend | Component architecture, state management, accessibility |
-| 11-auth-patterns | JWT, OAuth, RBAC, password security, session management |
-| 12-monitoring | Health checks, metrics, alerting, distributed tracing |
-| 13-environment | Config management, feature flags, Docker standards |
-| 14-dependency-management | Version pinning, security auditing, wrapper patterns |
-| 15-code-style | Naming conventions, file limits, function rules, type safety |
-| 16-ci-cd | Pipeline stages, Docker builds, deployment strategy |
-
-## How It Works
-
-### Three-Layer Architecture
-
-```
-Plugin Layer (always active)
-├── .claude-plugin/CLAUDE.md    ← Plugin instructions for Claude
-├── hooks/hooks.json            ← Lifecycle hooks (4 hook points)
-├── .mcp.json                   ← MCP server registration (10 tools)
-└── skills/*/SKILL.md           ← 5 slash commands
-
-Rule Layer (installed to target project)
-├── .claude/rules/*.md          ← 16 rule files with path-scoped activation
-├── CLAUDE.md                   ← Project constitution
-└── docs/templates/             ← Document templates (ADR, README, etc.)
-
-Data Layer (persistent, local)
-└── ~/.claude-architect/
-    └── architect.sqlite        ← SQLite database (decisions, violations, scores)
-```
-
-### Lifecycle Integration
+## Lifecycle Hooks
 
 | Event | What Happens |
 |-------|-------------|
-| **Session Start** | Load project context, show compliance score and open violations |
-| **User Prompt** | Inject relevant architecture rules for current working area |
-| **File Write/Edit** | Run quick validation on changed file, detect violations |
-| **Session End** | Summarize changes, update compliance score, trigger self-improvement |
+| **Session Start** | Starts worker, loads project context, sets KB workflow instructions |
+| **User Prompt** | Reminds Claude of KB workflow and dashboard link |
+| **Pre-Tool Use** | Before Write/Edit — queries KB index, injects relevant guidance |
+| **Post-Tool Use** | After Write/Edit — validates changed file, detects violations |
+| **Session End** | Summarizes changes, updates compliance score, triggers self-improvement |
 
-### Compliance Scoring
+## Architecture
 
-Score ranges from 0-100, weighted by category:
-- **Architecture** (30%): Dependency direction, feature structure
-- **Security** (25%): Anti-patterns, hardcoded secrets, SQL safety
-- **Quality** (20%): File size, test coverage, documentation
-- **Testing** (15%): Test file existence, co-location
-- **Documentation** (10%): README, PROJECT_MAP, JSDoc
+```
+claude-architect/
+├── software-engineering-kb/   1009 curated KB articles (markdown)
+├── hooks/                     Lifecycle hook configuration
+├── skills/                    Slash command definitions
+├── rules/                     31 architecture rule files
+├── templates/                 Document templates (ADR, README, etc.)
+├── ui/                        Web dashboard (HTML/CSS/JS + Chart.js)
+├── scripts/                   Compiled bundles (mcp-server.cjs, worker-service.cjs)
+└── src/
+    ├── servers/               MCP server (stdio) + tool definitions
+    ├── services/
+    │   ├── kb/                KB engine (index builder, lookup, ranker, types)
+    │   ├── sqlite/            Database layer (SQLite, WAL mode)
+    │   ├── worker/            HTTP API server (Express, port 37778)
+    │   ├── validator/         12 architecture validators
+    │   ├── scaffolder/        Feature generator
+    │   └── improver/          Self-improvement engine
+    ├── cli/handlers/          Hook event handlers
+    └── utils/                 Logging, paths, config
 
-### Self-Improvement Engine
+Data (persistent, per-user):
+~/.claude-architect/
+├── architect.sqlite           SQLite database (decisions, violations, scores)
+└── kb-index.json              KB search index (6.3MB, 1009 entries)
+```
 
-After 5+ sessions, the engine analyzes patterns:
-- **High ignore rate** → Suggests relaxing the rule
-- **Fast resolution** → Suggests adding auto-fix
-- **High frequency** → Suggests splitting the rule
-- **Zero violations** → Suggests removing (save tokens)
+### System Flow
 
-## Web Dashboard
+```
+MCP Server (Node.js, stdio)
+    ↓ delegates via HTTP
+Worker API (Bun, Express, port 37778)
+    ├── /api/check         → Compliance scoring (12 validators)
+    ├── /api/kb/lookup     → KB search (multi-signal ranking)
+    ├── /api/kb/read/:id   → Full article content
+    ├── /api/kb/stats      → Index statistics
+    ├── /api/search        → Decision/violation search
+    └── /api/scaffold      → Feature generation
+    ↓ serves
+Web Dashboard (http://localhost:37778)
+    └── Compliance gauge, violation cards, trend chart, decisions timeline
+```
 
-Open `http://localhost:37778` to view:
-- Compliance score gauge with trend
-- Violation summary cards (critical/warning/info)
-- Compliance trend chart (last 20 sessions)
-- Open violations table
-- Recent decisions timeline
-- Improvement suggestions
+## Compliance Scoring
+
+Score ranges from 0-100, calculated as weighted average of category scores:
+
+| Category | Weight | What It Checks |
+|----------|--------|----------------|
+| Dependency | 25% | Dependency direction violations, circular imports |
+| Structure | 20% | Feature organization, file size limits |
+| Security | 25% | OWASP anti-patterns, hardcoded secrets, SQL safety, XSS |
+| Quality | 20% | Code complexity, test coverage, naming conventions |
+| Documentation | 10% | README, JSDoc, changelog |
 
 ## Tech Stack
 
 | Component | Technology |
 |-----------|-----------|
 | Runtime | Bun (TypeScript) |
-| Database | SQLite via bun:sqlite |
-| MCP Server | @modelcontextprotocol/sdk (stdio) |
-| Worker API | Express.js (port 37778) |
+| Database | SQLite via bun:sqlite (WAL mode) |
+| MCP Server | @modelcontextprotocol/sdk (stdio, target: node) |
+| Worker API | Express.js (port 37778, target: bun) |
+| KB Index | JSON with multi-dimensional inverted indices |
 | Dashboard | Vanilla HTML/CSS/JS + Chart.js |
+| Tests | bun:test (234 tests) |
 
-## Project Structure
+## Build
 
+```bash
+bun install          # Install dependencies
+bun run build        # Build MCP server + Worker + KB index
+bun test             # Run all 234 tests
 ```
-claude-architect/
-├── .claude-plugin/     Plugin manifest and instructions
-├── hooks/              Lifecycle hook configuration
-├── skills/             5 slash command definitions
-├── scripts/            Compiled server bundles
-├── rules/              16 architecture rule files
-├── templates/          6 document templates
-├── ui/                 Web dashboard (HTML/CSS/JS)
-└── src/
-    ├── servers/        MCP server (stdio)
-    ├── services/
-    │   ├── sqlite/     Database layer (8 tables)
-    │   ├── worker/     HTTP API server
-    │   ├── validator/  Architecture validation engine
-    │   ├── scaffolder/ Feature generator
-    │   └── improver/   Self-improvement engine
-    ├── cli/handlers/   Hook event handlers
-    ├── types/          TypeScript type definitions
-    └── utils/          Logging, paths, config
-```
+
+Build produces 3 artifacts:
+- `scripts/mcp-server.cjs` — MCP server (runs with Node.js)
+- `scripts/worker-service.cjs` — Worker API (runs with Bun)
+- `~/.claude-architect/kb-index.json` — KB search index (1009 entries)
 
 ## Contributing
 
 1. Fork the repository
 2. Create your feature branch: `git checkout -b feat/your-feature`
-3. Commit using conventional commits: `git commit -m "feat(rules): add GraphQL rules"`
+3. Commit using conventional commits: `git commit -m "feat(kb): add new articles"`
 4. Push and create a Pull Request
 
 ## License

@@ -107,6 +107,9 @@ async function runHook(hookName: string): Promise<void> {
     case "session-complete":
       handler = await import("../../cli/handlers/session-complete");
       break;
+    case "pre-tool-use":
+      handler = await import("../../cli/handlers/pre-tool-use");
+      break;
     default:
       logger.error(`Unknown hook handler: ${hookName}`);
       process.exit(1);

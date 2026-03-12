@@ -14,6 +14,7 @@ import { registerDataRoutes } from "./routes/dataRoutes";
 import { registerDashboardRoutes } from "./routes/dashboardRoutes";
 import { registerTemplateRoutes } from "./routes/templateRoutes";
 import { registerCodeInfoRoutes } from "./routes/codeInfoRoutes";
+import { registerKbRoutes } from "./routes/kbRoutes";
 
 /**
  * Register all API routes on the Express app.
@@ -31,6 +32,7 @@ export function registerRoutes(app: Express): void {
   registerDashboardRoutes(router, db);
   registerTemplateRoutes(router);
   registerCodeInfoRoutes(router);
+  registerKbRoutes(router);
 
   app.use(router);
 }

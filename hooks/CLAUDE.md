@@ -11,6 +11,13 @@
 - Determines relevant architecture rules for current working directory
 - Returns compact rule summary + open violations for this area
 
+### PreToolUse (Write/Edit/NotebookEdit)
+- Fires BEFORE code is written — proactive knowledge guidance
+- Queries the KB index for relevant software engineering articles
+- Returns directives, imperatives, and best practices for the target file
+- Uses file path, extension, content, and path patterns for multi-signal matching
+- Output appears as system-reminder in Claude's context
+
 ### PostToolUse (Write/Edit)
 - Queues changed file for lightweight violation check
 - Validates dependency direction and file size

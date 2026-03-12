@@ -38,6 +38,7 @@ coverage/
 # Claude Code local config
 CLAUDE.local.md
 .claude/settings.local.json
+**/.claude/settings.local.json
 
 # Temporary files
 nul

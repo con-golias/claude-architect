@@ -72,6 +72,24 @@ export function getTemplatesDir(): string {
 }
 
 /**
+ * Get the software-engineering-kb directory path within the plugin.
+ *
+ * @returns Absolute path to the software-engineering-kb/ directory
+ */
+export function getKbDir(): string {
+  return join(getPluginRoot(), "software-engineering-kb");
+}
+
+/**
+ * Get the KB index file path in the data directory.
+ *
+ * @returns Absolute path to kb-index.json
+ */
+export function getKbIndexPath(): string {
+  return join(getDataDir(), "kb-index.json");
+}
+
+/**
  * Normalize a file path for consistent cross-platform comparison.
  *
  * @param filePath - Path to normalize

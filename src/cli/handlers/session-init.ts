@@ -72,6 +72,15 @@ export default async function handleSessionInit(): Promise<void> {
       }
     }
 
+    // KB behavioral instructions — correct workflow order
+    parts.push(`\n## KB System Active (1009 articles indexed)`);
+    parts.push(`**MANDATORY WORKFLOW — follow this order in EVERY code task:**`);
+    parts.push(`Step 1 — THOROUGH ANALYSIS: Examine every file carefully. Check for ALL issues: bugs, security vulnerabilities (XSS, injection), invalid formats (malformed UUIDs, wrong versions), unused code, missing references, structural problems. Do NOT rush this step. List every issue you find.`);
+    parts.push(`Step 2 — KB CONSULTATION: Call \`kb_lookup\` with the specific issues you found in Step 1. Check if KB has guidance.`);
+    parts.push(`Step 3 — REPORT ALL ISSUES: Present every issue from Step 1. Mark KB-guided fixes with [KB]. Fix the rest with your own expertise.`);
+    parts.push(`Step 4 — END with: "Dashboard: ${dashboardUrl}"`);
+    parts.push(`CRITICAL: Never skip issues. Never say "code is clean" unless you checked EVERY line.`);
+
     process.stdout.write(parts.join("\n"));
   } catch (err) {
     // Always output at least the dashboard URL even on failure
