@@ -72,6 +72,18 @@ export default async function handleSessionInit(): Promise<void> {
       }
     }
 
+    // Proactive tool usage instructions
+    parts.push(`\n## YOU MUST USE claude-architect tools`);
+    parts.push(`The claude-architect plugin is PROACTIVELY helping you. It works in two ways:`);
+    parts.push(`1. **Proactive hooks** — Before every prompt, the plugin analyzes your task and injects relevant KB guidance. When you see "[claude-architect] PROACTIVE DETECTION" — that IS the plugin working for you.`);
+    parts.push(`2. **On-demand tools** — You MUST also call these tools yourself:`);
+    parts.push(`   - **architect_check(project_path)** — Run FIRST to understand project health. Run AGAIN after changes.`);
+    parts.push(`   - **architect_scaffold(project_path, feature_name)** — ALWAYS use for new features. NEVER create architecture folders manually.`);
+    parts.push(`   - **kb_lookup(query)** — Consult BEFORE writing code. 1009 articles of best practices.`);
+    parts.push(`   - **architect_get_rules** — Check rules before suggesting changes.`);
+    parts.push(`When the user asks "did you use the plugin?", the answer is YES if you received proactive guidance OR called any tool.`);
+    parts.push(`If you complete a task without calling these tools, you did it WRONG.`);
+
     // KB behavioral instructions — correct workflow order
     parts.push(`\n## KB System Active (1009 articles indexed)`);
     parts.push(`**MANDATORY WORKFLOW — follow this order in EVERY code task:**`);
