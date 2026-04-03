@@ -65,6 +65,7 @@ export function buildIndex(kbDir?: string, outputPath?: string): BuildStats {
   const byLanguage: Record<string, string[]> = Object.create(null);
   const byCategory: Record<string, string[]> = Object.create(null);
   const byDomain: Record<string, string[]> = Object.create(null);
+  const byFolderSegment: Record<string, string[]> = Object.create(null);
 
   for (const entry of Object.values(entries)) {
     // By extension
@@ -105,6 +106,24 @@ export function buildIndex(kbDir?: string, outputPath?: string): BuildStats {
       if (!byDomain[part]) byDomain[part] = [];
       byDomain[part].push(entry.id);
     }
+
+    // By folder segment — map KB directory names to entries
+    const pathParts = entry.path.replace(/\.md$/, "").split("/");
+    pathParts.pop(); // remove filename
+    for (const part of pathParts) {
+      const cleaned = part.replace(/^\d+-/, "");
+      if (cleaned.length < 2) continue;
+      // Full hyphenated segment (e.g., "email-notifications")
+      if (!byFolderSegment[cleaned]) byFolderSegment[cleaned] = [];
+      byFolderSegment[cleaned].push(entry.id);
+      // Individual words (e.g., "email", "notifications")
+      for (const word of cleaned.split("-")) {
+        if (word.length > 2) {
+          if (!byFolderSegment[word]) byFolderSegment[word] = [];
+          byFolderSegment[word].push(entry.id);
+        }
+      }
+    }
   }
 
   // Step 4: Compute hash
@@ -123,6 +142,7 @@ export function buildIndex(kbDir?: string, outputPath?: string): BuildStats {
     byLanguage,
     byCategory,
     byDomain,
+    byFolderSegment,
   };
 
   // Step 6: Write to disk

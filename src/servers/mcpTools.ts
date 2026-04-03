@@ -185,4 +185,18 @@ export const TOOLS = [
       required: ["id"],
     },
   },
+  {
+    name: "kb_create_article",
+    description: "Create a new KB article when a knowledge gap is detected. Use after researching a topic and getting user approval. The article is saved in the KB directory and the index is rebuilt automatically.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        topic: { type: "string", description: "Article title (e.g., 'Marketing Automation')" },
+        folder_path: { type: "string", description: "KB folder path relative to KB root (e.g., '06-backend/marketing-automation')" },
+        content: { type: "string", description: "Full markdown content following KB article format (with directives, best practices, anti-patterns, checklist)" },
+        rebuild_index: { type: "boolean", description: "Rebuild KB index after creation (default: true)" },
+      },
+      required: ["topic", "folder_path", "content"],
+    },
+  },
 ];

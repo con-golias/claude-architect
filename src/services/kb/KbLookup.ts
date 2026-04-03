@@ -8,8 +8,12 @@
 import { readFileSync, existsSync } from "fs";
 import { extname, basename } from "path";
 import { getKbIndexPath } from "../../utils/paths";
-import { rankEntries } from "./KbRanker";
-import type { KbIndex, KbEntry, LookupContext, KbLookupResult } from "./KbTypes";
+import { rankEntries, rankEntriesForPrompt } from "./KbRanker";
+import { analyzePrompt } from "./PromptAnalyzer";
+import type {
+  KbIndex, KbEntry, LookupContext, KbLookupResult,
+  PromptLookupResult, KbGap,
+} from "./KbTypes";
 
 let cachedIndex: KbIndex | null = null;
 
@@ -232,4 +236,145 @@ function splitCamelKebab(name: string): string[] {
     .toLowerCase()
     .split(/\s+/)
     .filter((w) => w.length > 1);
+}
+
+/**
+ * Look up relevant KB entries from a user prompt (no file path needed).
+ * Uses folder-segment matching as the primary signal.
+ *
+ * @param prompt - Raw user prompt text
+ * @param options - Lookup options
+ * @returns Ranked results with gap detection
+ */
+export function lookupByPrompt(
+  prompt: string,
+  options: { limit?: number; indexPath?: string } = {},
+): PromptLookupResult {
+  const analysis = analyzePrompt(prompt);
+  const emptyResult: PromptLookupResult = { results: [], gaps: [], analysis };
+
+  const index = loadIndex(options.indexPath);
+  if (!index) return emptyResult;
+
+  const limit = options.limit || 5;
+
+  // Collect candidates — folder segments first (primary signal)
+  const candidateIds = new Set<string>();
+  const folderHitIds = new Set<string>();
+  const matchedTerms = new Set<string>();
+
+  const folderIndex = index.byFolderSegment || {};
+
+  for (const term of analysis.expandedTerms) {
+    const hits = folderIndex[term];
+    if (hits) {
+      for (const id of hits) {
+        candidateIds.add(id);
+        folderHitIds.add(id);
+      }
+      matchedTerms.add(term);
+    }
+  }
+
+  // Also check byKeyword and byDomain for broader coverage
+  for (const term of analysis.expandedTerms) {
+    const kwHits = index.byKeyword[term];
+    if (kwHits) {
+      for (const id of kwHits) candidateIds.add(id);
+      matchedTerms.add(term);
+    }
+    const domHits = index.byDomain[term];
+    if (domHits) {
+      for (const id of domHits) candidateIds.add(id);
+      matchedTerms.add(term);
+    }
+  }
+
+  // Add category-level candidates
+  for (const cat of analysis.categories) {
+    const catHits = index.byCategory[cat];
+    if (catHits) {
+      for (const id of catHits) candidateIds.add(id);
+    }
+  }
+
+  // Resolve to entries
+  const candidates: KbEntry[] = [];
+  for (const id of candidateIds) {
+    const entry = index.entries[id];
+    if (entry) candidates.push(entry);
+  }
+
+  // Rank with prompt-specific scoring
+  const ranked = rankEntriesForPrompt(candidates, analysis, folderHitIds, limit);
+
+  const results: KbLookupResult[] = ranked.map(({ entry, score }) => ({
+    id: entry.id,
+    title: entry.title,
+    category: entry.category,
+    domain: entry.domain,
+    score: Math.round(score * 100) / 100,
+    directive: entry.directive,
+    coreRule: entry.coreRule,
+    tags: entry.tags.slice(0, 10),
+    languages: entry.languages,
+    imperatives: entry.imperatives,
+    bestPractices: entry.bestPractices.slice(0, 5),
+    checklist: entry.checklist.slice(0, 5),
+  }));
+
+  // Detect gaps — concepts with no index hits
+  const gaps = detectGaps(analysis, matchedTerms, index);
+
+  return { results, gaps, analysis };
+}
+
+/**
+ * Detect KB coverage gaps from unmatched concepts.
+ */
+function detectGaps(
+  analysis: import("./KbTypes").PromptAnalysis,
+  matchedTerms: Set<string>,
+  index: KbIndex,
+): KbGap[] {
+  const gaps: KbGap[] = [];
+  const folderIndex = index.byFolderSegment || {};
+  const folderKeys = Object.keys(folderIndex);
+
+  for (const concept of analysis.concepts) {
+    // Skip if this concept (or its expansion) matched something
+    if (matchedTerms.has(concept)) continue;
+
+    const searched = ["byFolderSegment", "byKeyword", "byDomain"];
+
+    // Check if any expanded synonym matched
+    let anyMatch = false;
+    for (const term of analysis.expandedTerms) {
+      if (term.includes(concept) && matchedTerms.has(term)) {
+        anyMatch = true;
+        break;
+      }
+    }
+    if (anyMatch) continue;
+
+    // Find closest folder name match (prefix or substring)
+    let closestMatch: string | undefined;
+    for (const key of folderKeys) {
+      if (key.includes(concept) || concept.includes(key)) {
+        closestMatch = key;
+        break;
+      }
+    }
+
+    gaps.push({
+      concept,
+      searchedIndices: searched,
+      closestMatch,
+      suggestion: closestMatch
+        ? `No dedicated KB article for "${concept}". Closest folder: ${closestMatch}/`
+        : `No KB coverage found for "${concept}". Consider creating a new KB article.`,
+    });
+  }
+
+  return gaps;
 }

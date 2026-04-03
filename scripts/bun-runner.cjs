@@ -11,6 +11,7 @@
  */
 
 const { spawnSync, spawn } = require("child_process");
+const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const http = require("http");
@@ -168,6 +169,15 @@ async function main() {
     return;
   }
 
+  // Read parent stdin so we can forward it to child processes.
+  // Claude Code passes hook data (e.g., user prompt) via stdin.
+  let stdinData;
+  try {
+    stdinData = fs.readFileSync(0);
+  } catch {
+    stdinData = Buffer.alloc(0);
+  }
+
   // All other commands: synchronous execution (hooks, etc.)
   if (!bunPath) {
     process.stderr.write(
@@ -176,6 +186,7 @@ async function main() {
     const result = spawnSync("node", [scriptPath, ...scriptArgs], {
       cwd: PLUGIN_ROOT,
       stdio: ["pipe", "pipe", "pipe"],
+      input: stdinData,
       timeout: 300000,
       env,
       shell: true,
@@ -189,6 +200,7 @@ async function main() {
   const result = spawnSync(bunPath, ["run", scriptPath, ...scriptArgs], {
     cwd: PLUGIN_ROOT,
     stdio: ["pipe", "pipe", "pipe"],
+    input: stdinData,
     timeout: 300000,
     env,
     shell: process.platform === "win32",

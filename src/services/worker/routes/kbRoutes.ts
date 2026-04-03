@@ -5,8 +5,8 @@
  */
 
 import type { Router, Request, Response } from "express";
-import { readFileSync, existsSync } from "fs";
-import { join } from "path";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { join, resolve, normalize } from "path";
 import { lookup, loadIndex, clearCache } from "../../kb/KbLookup";
 import { buildIndex } from "../../kb/KbIndexBuilder";
 import { getKbDir, getKbIndexPath } from "../../../utils/paths";
@@ -152,6 +152,79 @@ export function registerKbRoutes(router: Router): void {
       kbHash: index.kbHash,
       byCategory,
       byLanguage,
+    });
+  });
+
+  /**
+   * POST /api/kb/create — Create a new KB article and optionally rebuild the index.
+   * Body: { topic, folder_path, content, rebuild_index? }
+   */
+  router.post("/api/kb/create", (req: Request, res: Response) => {
+    const { topic, folder_path, content, rebuild_index = true } = req.body as {
+      topic?: string; folder_path?: string; content?: string; rebuild_index?: boolean;
+    };
+
+    if (!topic || !folder_path || !content) {
+      res.status(400).json({ error: "topic, folder_path, and content are required" });
+      return;
+    }
+
+    // Security: prevent path traversal
+    if (folder_path.includes("..") || folder_path.startsWith("/")) {
+      res.status(400).json({ error: "Invalid folder_path: must be relative and cannot contain .." });
+      return;
+    }
+
+    const kbDir = getKbDir();
+    const targetDir = resolve(join(kbDir, folder_path));
+
+    // Ensure target is within KB directory
+    if (!normalize(targetDir).startsWith(normalize(kbDir))) {
+      res.status(400).json({ error: "folder_path must resolve within the KB directory" });
+      return;
+    }
+
+    // Create directory if needed
+    if (!existsSync(targetDir)) {
+      mkdirSync(targetDir, { recursive: true });
+    }
+
+    // Generate filename from topic
+    const fileName = topic
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .slice(0, 60)
+      + ".md";
+
+    const filePath = join(targetDir, fileName);
+
+    // Prevent overwriting existing files
+    if (existsSync(filePath)) {
+      res.status(409).json({ error: `Article already exists: ${folder_path}/${fileName}` });
+      return;
+    }
+
+    // Write the article
+    writeFileSync(filePath, content, "utf-8");
+
+    // Optionally rebuild index
+    let indexRebuilt = false;
+    if (rebuild_index) {
+      try {
+        clearCache();
+        buildIndex();
+        indexRebuilt = true;
+      } catch {
+        // Index rebuild failure is non-fatal
+      }
+    }
+
+    res.json({
+      success: true,
+      path: `${folder_path}/${fileName}`,
+      indexRebuilt,
     });
   });
 

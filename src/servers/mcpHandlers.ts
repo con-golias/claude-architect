@@ -181,6 +181,19 @@ export async function handleToolCall(
       return JSON.stringify(await workerFetch(url), null, 2);
     }
 
+    case "kb_create_article": {
+      if (!args.topic || !args.folder_path || !args.content) {
+        return JSON.stringify({ error: "topic, folder_path, and content are required" });
+      }
+      return JSON.stringify(
+        await workerFetch("/api/kb/create", {
+          method: "POST",
+          body: JSON.stringify(args),
+        }),
+        null, 2,
+      );
+    }
+
     default:
       return JSON.stringify({ error: `Unknown tool: ${name}` });
   }

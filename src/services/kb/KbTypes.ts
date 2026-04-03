@@ -91,6 +91,8 @@ export interface KbIndex {
   byCategory: Record<string, string[]>;
   /** Inverted index: domain tag -> entry IDs. */
   byDomain: Record<string, string[]>;
+  /** Inverted index: KB folder name segment -> entry IDs. */
+  byFolderSegment: Record<string, string[]>;
 }
 
 /** Context signals extracted from a target file for lookup. */
@@ -116,4 +118,37 @@ export interface KbLookupResult {
   imperatives: string[];
   bestPractices: string[];
   checklist: string[];
+}
+
+/** Structured analysis of a user prompt for KB lookup. */
+export interface PromptAnalysis {
+  /** Meaningful concepts extracted from the prompt. */
+  concepts: string[];
+  /** Detected technology/framework names. */
+  technologies: string[];
+  /** Inferred KB category names. */
+  categories: string[];
+  /** Original query terms for scoring. */
+  queryTerms: string[];
+  /** Terms after synonym expansion (for index lookup). */
+  expandedTerms: string[];
+}
+
+/** Result from a prompt-based KB lookup with gap detection. */
+export interface PromptLookupResult {
+  results: KbLookupResult[];
+  gaps: KbGap[];
+  analysis: PromptAnalysis;
+}
+
+/** A detected gap where the KB lacks coverage for a concept. */
+export interface KbGap {
+  /** The concept that wasn't found. */
+  concept: string;
+  /** Which indices were searched. */
+  searchedIndices: string[];
+  /** Nearest existing folder match, if any. */
+  closestMatch?: string;
+  /** Human-readable suggestion for the gap. */
+  suggestion: string;
 }

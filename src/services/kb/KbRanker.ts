@@ -5,7 +5,7 @@
  * @module kb-ranker
  */
 
-import type { KbEntry, LookupContext } from "./KbTypes";
+import type { KbEntry, LookupContext, PromptAnalysis } from "./KbTypes";
 
 /** Signal weights for scoring. */
 const WEIGHTS = {
@@ -140,6 +140,107 @@ export function rankEntries(
   const scored = entries
     .map((entry) => ({ entry, score: scoreEntry(entry, context) }))
     .filter((r) => r.score >= MIN_SCORE)
+    .sort((a, b) => b.score - a.score);
+
+  return scored.slice(0, limit);
+}
+
+/** Weights for prompt-based scoring (folder names are primary signal). */
+const PROMPT_WEIGHTS = {
+  folderSegmentMatch: 5.0,
+  titleMatch: 4.0,
+  domainMatch: 3.0,
+  keywordMatch: 2.0,
+  tagMatch: 1.5,
+  categoryMatch: 1.5,
+  directiveBonus: 2.0,
+  imperativeBonus: 0.5,
+};
+
+/** Lower threshold for prompt queries (no file-path signals). */
+const PROMPT_MIN_SCORE = 2.0;
+
+/**
+ * Score a KB entry against a prompt analysis.
+ * Folder segment matches are the highest-value signal.
+ *
+ * @param entry - KB entry to score
+ * @param analysis - Analyzed prompt data
+ * @param folderHits - Set of entry IDs that matched byFolderSegment
+ */
+export function scoreEntryForPrompt(
+  entry: KbEntry,
+  analysis: PromptAnalysis,
+  folderHits: Set<string>,
+): number {
+  let score = 0;
+
+  // Signal 1: Folder segment match (highest — KB organizational taxonomy)
+  if (folderHits.has(entry.id)) {
+    score += PROMPT_WEIGHTS.folderSegmentMatch;
+  }
+
+  // Signal 2: Title match against expanded terms
+  const titleLower = entry.title.toLowerCase();
+  for (const term of analysis.expandedTerms) {
+    if (titleLower.includes(term)) {
+      score += PROMPT_WEIGHTS.titleMatch;
+      break;
+    }
+  }
+
+  // Signal 3: Domain match
+  const domainLower = entry.domain.toLowerCase();
+  for (const term of analysis.expandedTerms) {
+    if (domainLower.includes(term)) {
+      score += PROMPT_WEIGHTS.domainMatch;
+      break;
+    }
+  }
+
+  // Signal 4: Category match
+  if (analysis.categories.includes(entry.category)) {
+    score += PROMPT_WEIGHTS.categoryMatch;
+  }
+
+  // Signal 5: Tag overlap
+  const termSet = new Set(analysis.expandedTerms);
+  let tagMatches = 0;
+  for (const tag of entry.tags) {
+    if (termSet.has(tag)) tagMatches++;
+  }
+  if (tagMatches > 0) {
+    score += Math.min(tagMatches * PROMPT_WEIGHTS.tagMatch, PROMPT_WEIGHTS.tagMatch * 3);
+  }
+
+  // Signal 6: Keyword overlap (appliesTo.keywords)
+  let kwMatches = 0;
+  for (const kw of entry.appliesTo.keywords) {
+    if (termSet.has(kw)) kwMatches++;
+  }
+  if (kwMatches > 0) {
+    score += Math.min(kwMatches * PROMPT_WEIGHTS.keywordMatch, PROMPT_WEIGHTS.keywordMatch * 3);
+  }
+
+  // Bonuses
+  if (entry.directive) score += PROMPT_WEIGHTS.directiveBonus;
+  if (entry.imperatives.length > 0) score += PROMPT_WEIGHTS.imperativeBonus;
+
+  return score;
+}
+
+/**
+ * Rank entries for a prompt-based lookup.
+ */
+export function rankEntriesForPrompt(
+  entries: KbEntry[],
+  analysis: PromptAnalysis,
+  folderHits: Set<string>,
+  limit: number = 5,
+): Array<{ entry: KbEntry; score: number }> {
+  const scored = entries
+    .map((entry) => ({ entry, score: scoreEntryForPrompt(entry, analysis, folderHits) }))
+    .filter((r) => r.score >= PROMPT_MIN_SCORE)
     .sort((a, b) => b.score - a.score);
 
   return scored.slice(0, limit);
