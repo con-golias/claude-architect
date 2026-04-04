@@ -145,6 +145,22 @@ export function rankEntries(
   return scored.slice(0, limit);
 }
 
+/**
+ * Competing technology groups. If the prompt mentions one tech in a group,
+ * articles about a DIFFERENT tech in the same group get penalized.
+ * This prevents gRPC articles from appearing when user asked for REST, etc.
+ */
+const COMPETING_TECH_GROUPS: string[][] = [
+  ["rest", "grpc", "graphql"],
+  ["react", "vue", "angular", "svelte"],
+  ["express", "fastify", "nestjs", "koa"],
+  ["django", "flask", "fastapi"],
+  ["postgres", "mysql", "mongodb", "sqlite", "dynamodb"],
+];
+
+/** Penalty applied when an article is about a competing technology. */
+const COMPETING_TECH_PENALTY = -6.0;
+
 /** Weights for prompt-based scoring (folder names are primary signal). */
 const PROMPT_WEIGHTS = {
   folderSegmentMatch: 5.0,
@@ -229,7 +245,38 @@ export function scoreEntryForPrompt(
   if (entry.directive) score += PROMPT_WEIGHTS.directiveBonus;
   if (entry.imperatives.length > 0) score += PROMPT_WEIGHTS.imperativeBonus;
 
+  // Competing technology penalty — filter out irrelevant tech articles
+  if (hasCompetingTechMismatch(entry, analysis)) {
+    score += COMPETING_TECH_PENALTY;
+  }
+
   return score;
+}
+
+/**
+ * Check if an entry discusses a technology that competes with what the prompt asks for.
+ * E.g., gRPC articles when prompt mentions REST/Express.
+ */
+function hasCompetingTechMismatch(entry: KbEntry, analysis: PromptAnalysis): boolean {
+  const entrySegments = entry.id.toLowerCase().split("/");
+  const allPromptTerms = new Set([
+    ...analysis.technologies,
+    ...analysis.expandedTerms,
+    ...analysis.concepts,
+  ]);
+
+  for (const group of COMPETING_TECH_GROUPS) {
+    const promptMentions = group.filter((t) => allPromptTerms.has(t));
+    if (promptMentions.length === 0) continue;
+
+    // Entry path contains a tech the prompt DOESN'T mention, from the same competing group
+    const entryHasOtherTech = group.some(
+      (t) => !allPromptTerms.has(t) && entrySegments.includes(t),
+    );
+    if (entryHasOtherTech) return true;
+  }
+
+  return false;
 }
 
 /**

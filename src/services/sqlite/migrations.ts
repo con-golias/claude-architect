@@ -254,6 +254,25 @@ export const MIGRATIONS: Migration[] = [
       );
     },
   },
+  {
+    version: 5,
+    description: "Session enforcement state for web search / scaffold compliance",
+    up: (db: Database) => {
+      db.run(`
+        CREATE TABLE IF NOT EXISTS session_enforcement (
+          session_id TEXT PRIMARY KEY,
+          kb_gaps_detected INTEGER NOT NULL DEFAULT 0,
+          gap_concepts TEXT NOT NULL DEFAULT '[]',
+          web_search_count INTEGER NOT NULL DEFAULT 0,
+          scaffold_features TEXT NOT NULL DEFAULT '[]',
+          created_at INTEGER NOT NULL
+        )
+      `);
+      db.run(
+        `CREATE INDEX IF NOT EXISTS idx_enforcement_session ON session_enforcement(session_id)`,
+      );
+    },
+  },
 ];
 
 /**

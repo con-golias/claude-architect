@@ -10,6 +10,7 @@ import { readFileSync } from "fs";
 import { getDatabase } from "../../services/sqlite/Database";
 import { findProjectByPath } from "../../services/sqlite/Projects";
 import { getOpenViolations } from "../../services/sqlite/Violations";
+import { recordKbGaps } from "../../services/sqlite/Enforcement";
 import { getProjectPath } from "../../utils/paths";
 import { loadConfig } from "../../utils/config";
 import { lookupByPrompt } from "../../services/kb/KbLookup";
@@ -138,7 +139,7 @@ function buildKbGuidance(
     }
   }
 
-  // Gap detection
+  // Gap detection — record in enforcement DB so PreToolUse can block Write/Edit
   if (gaps.length > 0) {
     parts.push(``);
     parts.push(`## KB GAPS DETECTED`);
@@ -151,6 +152,15 @@ function buildKbGuidance(
       `You MUST search the web for best practices on these topics BEFORE writing code. ` +
       `Apply findings with [WEB] tag. This is NOT optional — the plugin requires it.`,
     );
+
+    // Persist gaps so PreToolUse hook can enforce web search
+    try {
+      const sessionId = process.env.CLAUDE_SESSION_ID;
+      if (sessionId) {
+        const db = getDatabase();
+        recordKbGaps(db, sessionId, gaps.map((g) => g.concept));
+      }
+    } catch { /* non-critical */ }
   }
 
   // Violations context (non-critical)
