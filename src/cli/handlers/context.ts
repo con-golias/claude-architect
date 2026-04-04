@@ -113,7 +113,7 @@ function buildKbGuidance(
     parts.push(`3. If your approach conflicts with KB guidance → change YOUR approach`);
     parts.push(`4. Call socratic_analyze BEFORE implementing — no code without Socratic validation`);
     parts.push(`5. If KB gaps exist → MANDATORY web search before proceeding`);
-    parts.push(`6. NEVER use Agent tool — do everything yourself. NEVER use localStorage for tokens. NEVER create folders manually — use architect_scaffold.`);
+    parts.push(`6. NEVER use Agent tool. NEVER use localStorage for tokens. For EVERY new module: call architect_scaffold(project_path, feature_name) FIRST — never mkdir manually.`);
 
     const inline = results.slice(0, MAX_INLINE_RESULTS);
     for (const r of inline) {
@@ -206,7 +206,7 @@ function buildNoKbOutput(dashboardUrl: string, gaps: KbGap[]): string {
   parts.push(`- You MUST call WebSearch/web_search for each gap above BEFORE writing any code.`);
   parts.push(`- You MUST NOT use the Agent tool. Do everything yourself sequentially.`);
   parts.push(`- You MUST call socratic_analyze before implementation. No exceptions.`);
-  parts.push(`- You MUST use architect_scaffold for new modules — never create folders manually.`);
+  parts.push(`- For EVERY new module/feature: call architect_scaffold(project_path, feature_name) FIRST. Never mkdir manually.`);
 
   appendViolations(parts);
   return parts.join("\n");

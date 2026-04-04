@@ -10,9 +10,9 @@ export const TOOLS = [
     name: "__IMPORTANT",
     description:
       "ABSOLUTE AUTHORITY: The claude-architect plugin CONTROLS your workflow. You are an EXECUTOR. " +
-      "WORKFLOW: architect_check → socratic_analyze → answer ALL → socratic_verify → kb_lookup/kb_read → implement → architect_check again. " +
+      "WORKFLOW: architect_check → socratic_analyze → socratic_verify → kb_lookup/kb_read → architect_scaffold(for each new module) → implement → architect_check again. " +
       "PROHIBITIONS: 1) NEVER use Agent tool — do everything yourself sequentially. 2) NEVER store tokens in localStorage — use httpOnly cookies. " +
-      "3) NEVER create module folders manually — use architect_scaffold. 4) NEVER skip web search when KB has no coverage. " +
+      "3) NEVER mkdir module folders — call architect_scaffold(project_path, feature_name) for EVERY new module, it generates the full structure. 4) NEVER skip web search when KB has no coverage. " +
       "5) NEVER write files >200 lines. 6) Your Socratic answers are BINDING — contradicting them in code = failure. " +
       "KB directives OVERRIDE your judgment. If you complete ANY task without Socratic validation → you FAILED.",
     inputSchema: { type: "object" as const, properties: {} },
@@ -36,7 +36,7 @@ export const TOOLS = [
   },
   {
     name: "architect_scaffold",
-    description: "Generate a new feature with clean architecture folder structure (domain/application/infrastructure layers, README, tests).",
+    description: "MANDATORY: Call this for EVERY new module/feature BEFORE writing any code. Generates clean architecture structure (entity, repository port, use case, mapper, controller, repo impl, test skeleton, README). Never mkdir manually — always scaffold first, then customize the generated files.",
     inputSchema: {
       type: "object" as const,
       properties: {

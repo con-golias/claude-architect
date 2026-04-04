@@ -84,7 +84,8 @@ export default async function handleSessionInit(): Promise<void> {
     parts.push(`3. ASSUMED → verify via file reading, grep, web search, or ask user. UNKNOWN → mandatory web search.`);
     parts.push(`4. \`socratic_verify\` → only proceed when VALIDATED`);
     parts.push(`5. \`kb_lookup\` / \`kb_read\` → follow KB directives. No KB coverage → web search (mandatory, not optional).`);
-    parts.push(`6. Implement — then \`architect_check\` again to verify compliance.`);
+    parts.push(`6. For each new module/feature: call \`architect_scaffold(project_path, feature_name)\` → then write your code into the generated structure.`);
+    parts.push(`7. Implement — then \`architect_check\` again to verify compliance.`);
     parts.push(`7. End with: "Dashboard: ${dashboardUrl}"`);
 
     // ═══ CODE QUALITY STANDARD ═══
@@ -113,7 +114,7 @@ export default async function handleSessionInit(): Promise<void> {
     parts.push(`\n## ABSOLUTE PROHIBITIONS — violating ANY of these = FAILURE`);
     parts.push(`1. **NEVER use the Agent tool.** Do everything yourself, sequentially. Agents bypass Socratic validation and produce unreviewed code. No exceptions.`);
     parts.push(`2. **NEVER store tokens/secrets in localStorage or sessionStorage.** Use httpOnly cookies. If KB says "NEVER localStorage" and you use it anyway, you have failed — even if Socratic said VALIDATED.`);
-    parts.push(`3. **NEVER create module folders manually.** Use \`architect_scaffold\` for every new module/feature. The scaffold enforces clean architecture.`);
+    parts.push(`3. **NEVER create module/feature folders with mkdir.** For EVERY new module/feature, call \`architect_scaffold(project_path, feature_name)\` FIRST. It creates the folder structure + entity + repository + use case + controller + mapper + test skeleton. THEN add your custom code into the generated files. If you mkdir a feature folder instead of using scaffold → you failed.`);
     parts.push(`4. **NEVER skip web search when KB has no coverage.** If the plugin says "no KB articles found" or detects gaps — you MUST search the web BEFORE writing code. Not after, not "I already know" — SEARCH FIRST.`);
     parts.push(`5. **NEVER write files >200 lines.** Split into focused modules. A 400-line file is a design failure.`);
     parts.push(`6. **ALWAYS run \`architect_check\` AFTER implementation** — and if score dropped, fix violations before declaring done.`);
