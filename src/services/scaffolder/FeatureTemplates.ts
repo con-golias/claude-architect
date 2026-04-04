@@ -250,6 +250,67 @@ export class ${name}RepositoryImpl implements ${name}Repository {
 `;
 }
 
+/** Generate test skeleton for entity + mapper. */
+export function generateTestSkeleton(name: string, lang: "ts" | "js" = "ts"): string {
+  if (lang === "js") {
+    return `const { ${name} } = require("../../domain/entities/${name}");
+const { ${name}Mapper } = require("../../application/mappers/${name}Mapper");
+
+describe("${name}", () => {
+  test("creates entity with valid props", () => {
+    const entity = new ${name}({ id: "test-id" });
+    expect(entity.id).toBe("test-id");
+    expect(entity.createdAt).toBeInstanceOf(Date);
+  });
+
+  test("touch() updates updatedAt", () => {
+    const entity = new ${name}({ id: "test-id" });
+    const before = entity.updatedAt;
+    entity.touch();
+    expect(entity.updatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+  });
+});
+
+describe("${name}Mapper", () => {
+  test("toOutput returns serialized entity", () => {
+    const entity = new ${name}({ id: "test-id" });
+    const output = ${name}Mapper.toOutput(entity);
+    expect(output.id).toBe("test-id");
+    expect(typeof output.createdAt).toBe("string");
+  });
+});
+`;
+  }
+
+  return `import { ${name} } from "../../domain/entities/${name}";
+import { ${name}Mapper } from "../../application/mappers/${name}Mapper";
+
+describe("${name}", () => {
+  test("creates entity with valid props", () => {
+    const entity = new ${name}({ id: "test-id" });
+    expect(entity.id).toBe("test-id");
+    expect(entity.createdAt).toBeInstanceOf(Date);
+  });
+
+  test("touch() updates updatedAt", () => {
+    const entity = new ${name}({ id: "test-id" });
+    const before = entity.updatedAt;
+    entity.touch();
+    expect(entity.updatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+  });
+});
+
+describe("${name}Mapper", () => {
+  test("toOutput returns serialized entity", () => {
+    const entity = new ${name}({ id: "test-id" });
+    const output = ${name}Mapper.toOutput(entity);
+    expect(output.id).toBe("test-id");
+    expect(typeof output.createdAt).toBe("string");
+  });
+});
+`;
+}
+
 /** Generate feature README. */
 export function generateReadme(
   kebabName: string, pascalName: string, description: string,

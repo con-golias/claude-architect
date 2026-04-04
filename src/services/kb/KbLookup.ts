@@ -9,7 +9,7 @@ import { readFileSync, existsSync } from "fs";
 import { extname, basename } from "path";
 import { getKbIndexPath } from "../../utils/paths";
 import { rankEntries, rankEntriesForPrompt } from "./KbRanker";
-import { analyzePrompt } from "./PromptAnalyzer";
+import { analyzePrompt, GENERIC_TERMS } from "./PromptAnalyzer";
 import type {
   KbIndex, KbEntry, LookupContext, KbLookupResult,
   PromptLookupResult, KbGap,
@@ -364,6 +364,10 @@ function detectGaps(
   const folderKeys = Object.keys(folderIndex);
 
   for (const concept of analysis.concepts) {
+    // Skip short terms and generic words — they produce noise, not gaps
+    if (concept.length < 4) continue;
+    if (GENERIC_TERMS.has(concept)) continue;
+
     // Skip if this concept (or its expansion) matched something
     if (matchedTerms.has(concept)) continue;
 

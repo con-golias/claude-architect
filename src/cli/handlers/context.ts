@@ -13,6 +13,7 @@ import { getOpenViolations } from "../../services/sqlite/Violations";
 import { getProjectPath } from "../../utils/paths";
 import { loadConfig } from "../../utils/config";
 import { lookupByPrompt } from "../../services/kb/KbLookup";
+import { analyzePrompt } from "../../services/kb/PromptAnalyzer";
 import type { KbLookupResult, KbGap } from "../../services/kb/KbTypes";
 
 /** Max output size (chars) to stay within token budget. */
@@ -34,6 +35,12 @@ export default async function handleContext(): Promise<void> {
   // Step 2: If no meaningful prompt, fall back to generic output
   if (!userPrompt || userPrompt.length < 10) {
     process.stdout.write(buildGenericOutput(dashboardUrl));
+    return;
+  }
+
+  // Step 2b: If conversational (no technical content), output minimal reminder
+  if (isConversational(userPrompt)) {
+    process.stdout.write(buildConversationalOutput(dashboardUrl));
     return;
   }
 
@@ -221,4 +228,46 @@ function appendViolations(parts: string[]): void {
   } catch {
     // Non-critical
   }
+}
+
+const GREETING_PATTERN = /^(hi|hello|hey|thanks|thank you|ok|okay|yes|no|sure|cool|great|got it|understood|perfect|nice|good|bye|cheers|yep|nope|alright|fine|ωραια|ναι|οχι|ευχαριστω|γεια)\b/i;
+
+const META_PATTERNS = [
+  /what (can|do) you do/i,
+  /how (does|do) (this|the) (plugin|tool|system) work/i,
+  /who (are|made) you/i,
+  /tell me about yourself/i,
+];
+
+/** Detect if a prompt is conversational (no technical content). */
+export function isConversational(prompt: string): boolean {
+  const trimmed = prompt.trim();
+
+  // Short greetings / acknowledgments
+  if (trimmed.length < 40 && GREETING_PATTERN.test(trimmed)) return true;
+
+  // Meta-questions about the plugin
+  if (META_PATTERNS.some(p => p.test(trimmed))) return true;
+
+  // No technical signals from prompt analysis
+  const analysis = analyzePrompt(trimmed);
+  if (
+    analysis.technologies.length === 0 &&
+    analysis.categories.length === 0 &&
+    analysis.expandedTerms.length === 0
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/** Minimal output for non-code prompts — save tokens. */
+function buildConversationalOutput(dashboardUrl: string): string {
+  return [
+    `# [claude-architect] Plugin active`,
+    `Dashboard: ${dashboardUrl}`,
+    `No code-related guidance needed for this prompt.`,
+    `When you write code, the plugin will provide KB guidance and enforce Socratic protocol automatically.`,
+  ].join("\n");
 }

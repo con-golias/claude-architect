@@ -218,4 +218,43 @@ describe("generateFeature", () => {
 
     expect(result.createdFiles.some((f) => f.endsWith(".ts"))).toBe(true);
   });
+
+  test("generates test skeleton with entity and mapper tests", () => {
+    const result = generateFeature({
+      projectPath: tempDir,
+      featureName: "invoice",
+    });
+
+    expect(result.createdFiles).toContain("src/features/invoice/__tests__/Invoice.test.ts");
+    const testPath = join(tempDir, "src", "features", "invoice", "__tests__", "Invoice.test.ts");
+    const content = readFileSync(testPath, "utf-8");
+    expect(content).toContain('import { Invoice }');
+    expect(content).toContain('import { InvoiceMapper }');
+    expect(content).toContain('describe("Invoice"');
+    expect(content).toContain("creates entity with valid props");
+    expect(content).toContain("touch() updates updatedAt");
+  });
+
+  test("generates JS test skeleton for JavaScript projects", () => {
+    generateFeature({
+      projectPath: tempDir,
+      featureName: "receipt",
+      language: "JavaScript",
+    });
+
+    const testPath = join(tempDir, "src", "features", "receipt", "__tests__", "Receipt.test.js");
+    const content = readFileSync(testPath, "utf-8");
+    expect(content).toContain("require(");
+    expect(content).not.toContain("import ");
+  });
+
+  test("skips test skeleton when withTests is false", () => {
+    const result = generateFeature({
+      projectPath: tempDir,
+      featureName: "report",
+      withTests: false,
+    });
+
+    expect(result.createdFiles.some((f) => f.includes(".test."))).toBe(false);
+  });
 });

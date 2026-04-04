@@ -19,6 +19,7 @@ import {
   generateController,
   generateRepositoryImpl,
   generateReadme,
+  generateTestSkeleton,
 } from "./FeatureTemplates";
 
 export interface ScaffoldOptions {
@@ -94,6 +95,10 @@ export function generateFeature(options: ScaffoldOptions): ScaffoldResult {
     [`infrastructure/repositories/${pascalName}RepositoryImpl.${ext}`, generateRepositoryImpl(pascalName, lang)],
     ["README.md", generateReadme(kebabName, pascalName, description)],
   ];
+
+  if (withTests) {
+    files.push([`__tests__/${pascalName}.test.${ext}`, generateTestSkeleton(pascalName, lang)]);
+  }
 
   for (const [relativePath, content] of files) {
     writeFileSync(join(featurePath, relativePath), content, "utf-8");

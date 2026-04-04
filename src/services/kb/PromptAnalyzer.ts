@@ -295,6 +295,18 @@ const TECHNOLOGIES = new Set([
   "bootstrap", "material", "flutter", "electron", "tauri",
 ]);
 
+/** Terms too generic for KB matching or gap detection. */
+export const GENERIC_TERMS = new Set([
+  "modern", "features", "management", "web", "app", "application",
+  "project", "code", "tool", "service", "module", "data", "simple",
+  "basic", "advanced", "best", "good", "bad", "help", "work",
+  "plugin", "experts", "team", "people", "stuff", "things", "done",
+  "ready", "improvements", "changes", "file", "folder", "directory",
+  "run", "push", "commit", "git", "tests", "setup", "plan", "check",
+  "look", "show", "tell", "explain", "list", "need", "want", "make",
+  "part", "open", "close", "start", "stop", "name", "type", "class",
+]);
+
 /**
  * Analyze a user prompt to extract concepts, technologies, and domain signals.
  */
@@ -334,12 +346,6 @@ export function analyzePrompt(prompt: string): PromptAnalysis {
   }
 
   // Step 5: Synonym expansion (limited to top 2 per term, skip overly generic)
-  const GENERIC_TERMS = new Set([
-    "modern", "features", "management", "web", "app", "application",
-    "project", "code", "tool", "service", "module", "data", "simple",
-    "basic", "advanced", "best", "good", "bad", "help", "work",
-  ]);
-
   for (const token of concepts) {
     // Skip generic terms that match too broadly
     if (GENERIC_TERMS.has(token)) continue;

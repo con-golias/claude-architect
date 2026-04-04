@@ -8,6 +8,8 @@
 import { lookup, loadIndex } from "../../services/kb/KbLookup";
 import { getKbIndexPath } from "../../utils/paths";
 import { logger } from "../../utils/logger";
+import { getDatabase } from "../../services/sqlite/Database";
+import { getActiveSession } from "../../services/sqlite/Socratic";
 import type { KbLookupResult } from "../../services/kb/KbTypes";
 
 /** Max output chars to keep context concise. */
@@ -34,6 +36,21 @@ export default async function handlePreToolUse(): Promise<void> {
     } catch {
       process.stdout.write("Success");
       return;
+    }
+
+    // Socratic enforcement — warn if no validated session for Write/Edit
+    try {
+      const db = getDatabase();
+      const activeSession = getActiveSession(db);
+      if (!activeSession || activeSession.status !== "VALIDATED") {
+        process.stdout.write(
+          `# [claude-architect] WARNING: No validated Socratic session\n` +
+          `You are about to write/edit code without Socratic validation.\n` +
+          `RECOMMENDED: Run socratic_analyze first to validate your approach.\n\n`
+        );
+      }
+    } catch {
+      // DB unavailable — non-critical, continue with KB guidance
     }
 
     // Extract file path from tool input
