@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { evaluateConfidence } from "./SocraticMetaOperator";
-import { Confidence, Dimension, Atomicity } from "./SocraticTypes";
+import { Confidence, Dimension, Atomicity, VerificationMethod } from "./SocraticTypes";
 import type { SocraticAnswer } from "./SocraticTypes";
 
 function makeAnswer(overrides: Partial<SocraticAnswer> = {}): SocraticAnswer {
@@ -55,7 +55,7 @@ describe("SocraticMetaOperator", () => {
         makeAnswer({ confidence: Confidence.YPOTHETO, evidence: null }),
         Dimension.APO_TI,
       );
-      expect(result!.method).toBe("READ_CODEBASE");
+      expect(result!.method).toBe(VerificationMethod.READ_CODEBASE);
       expect(result!.suggestedActions.some((a) => a.includes("package.json"))).toBe(true);
     });
 
@@ -64,7 +64,7 @@ describe("SocraticMetaOperator", () => {
         makeAnswer({ confidence: Confidence.DEN_KSERO, evidence: null }),
         Dimension.GIATI,
       );
-      expect(result!.method).toBe("ASK_USER");
+      expect(result!.method).toBe(VerificationMethod.ASK_USER);
       expect(result!.suggestedActions.some((a) => a.includes("Ask user"))).toBe(true);
     });
 
@@ -73,7 +73,7 @@ describe("SocraticMetaOperator", () => {
         makeAnswer({ confidence: Confidence.YPOTHETO, evidence: null }),
         Dimension.TI,
       );
-      expect(result!.method).toBe("WEB_SEARCH");
+      expect(result!.method).toBe(VerificationMethod.WEB_SEARCH);
       expect(result!.suggestedActions.some((a) => a.includes("Web search"))).toBe(true);
     });
 
@@ -82,7 +82,7 @@ describe("SocraticMetaOperator", () => {
         makeAnswer({ confidence: Confidence.YPOTHETO, evidence: null }),
         Dimension.POS,
       );
-      expect(result!.method).toBe("WEB_SEARCH_AND_DOCS");
+      expect(result!.method).toBe(VerificationMethod.WEB_SEARCH_AND_DOCS);
     });
   });
 });

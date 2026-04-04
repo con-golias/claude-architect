@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { generateQuestions, generateRecursiveQuestions } from "./SocraticGenerator";
-import { Tier } from "./SocraticTypes";
+import { Tier, Operator, Dimension } from "./SocraticTypes";
 
 describe("SocraticGenerator", () => {
   describe("generateQuestions", () => {
@@ -18,7 +18,7 @@ describe("SocraticGenerator", () => {
 
       // All operators should be EINAI
       for (const q of questions) {
-        expect(q.operator).toBe("EINAI");
+        expect(q.operator).toBe(Operator.EINAI);
       }
     });
 
@@ -61,7 +61,7 @@ describe("SocraticGenerator", () => {
 
       for (const q of questions) {
         expect(q.id).toStartWith("L2-TI-EINAI-");
-        expect(q.operator).toBe("EINAI");
+        expect(q.operator).toBe(Operator.EINAI);
       }
     });
 
@@ -70,9 +70,9 @@ describe("SocraticGenerator", () => {
       expect(questions).toHaveLength(3);
 
       const dimensions = new Set(questions.map((q) => q.dimension));
-      expect(dimensions).toContain("TI");
-      expect(dimensions).toContain("APO_TI");
-      expect(dimensions).toContain("POU");
+      expect(dimensions).toContain(Dimension.TI);
+      expect(dimensions).toContain(Dimension.APO_TI);
+      expect(dimensions).toContain(Dimension.POU);
     });
 
     test("level 4+ → 0 questions (termination)", () => {
