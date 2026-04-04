@@ -27,10 +27,12 @@ export function checkStructure(projectPath: string, resolution?: SourceResolutio
   const features: FeatureInfo[] = [];
 
   // Feature structure checks only for clean architecture projects
+  const isJsOnly = resolution && resolution.projectTypes.includes("node-js") && !resolution.projectTypes.includes("node-ts");
+
   if (resolution && !resolution.hasCleanArchitecture) {
     const gateViolations: Violation[] = [];
-    // Still check project-level files
-    if (!existsSync(join(projectPath, "tsconfig.json"))) {
+    // Only flag missing tsconfig.json for TypeScript projects
+    if (!isJsOnly && !existsSync(join(projectPath, "tsconfig.json"))) {
       gateViolations.push({ ruleId: "01-architecture", ruleName: "Architecture", severity: "info", category: "structure", description: "Missing tsconfig.json (TypeScript configuration)", suggestion: "Create tsconfig.json with strict mode enabled" });
     }
     if (!existsSync(join(projectPath, "PROJECT_MAP.md"))) {
@@ -70,8 +72,8 @@ export function checkStructure(projectPath: string, resolution?: SourceResolutio
     });
   }
 
-  // Check for tsconfig.json
-  if (!existsSync(join(projectPath, "tsconfig.json"))) {
+  // Check for tsconfig.json — only for TypeScript projects
+  if (!isJsOnly && !existsSync(join(projectPath, "tsconfig.json"))) {
     violations.push({
       ruleId: "03-quality",
       ruleName: "TypeScript Config",

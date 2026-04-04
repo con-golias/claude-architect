@@ -100,7 +100,7 @@ export function checkQuality(projectPath: string, resolution?: SourceResolution)
       ruleName: "Test Coverage",
       severity: "info",
       category: "quality",
-      description: `No test files found (${tested} of ${filesScanned} source files have tests)`,
+      description: `${missingTestFiles.length} source file(s) lack test coverage (${tested} of ${filesScanned} have tests)`,
       suggestion: `Create test files for: ${missingTestFiles.map(f => basename(f)).join(", ")}`,
     });
   }

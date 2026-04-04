@@ -100,6 +100,24 @@ export function normalizePath(filePath: string): string {
 }
 
 /**
+ * Normalize MSYS/Git-Bash paths to Windows format.
+ * Converts /c/Users/... → C:/Users/... for Bun compatibility on Windows.
+ * Passes through non-MSYS paths unchanged.
+ *
+ * @param inputPath - Path that may be MSYS format
+ * @returns Windows-compatible path
+ */
+export function normalizePlatformPath(inputPath: string): string {
+  if (!inputPath) return inputPath;
+  // MSYS pattern: /c/Users/... or /d/Projects/...
+  const msysMatch = inputPath.match(/^\/([a-zA-Z])\/(.*)/);
+  if (msysMatch) {
+    return `${msysMatch[1].toUpperCase()}:/${msysMatch[2]}`;
+  }
+  return inputPath;
+}
+
+/**
  * Check if a path is inside a given directory.
  *
  * @param filePath - Path to check

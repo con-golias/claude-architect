@@ -58,6 +58,7 @@ function isRelativeImport(importPath: string): boolean {
 
 /**
  * Run dependency direction validation on a project.
+ * Checks layer violations AND circular dependencies.
  *
  * @param projectPath - Absolute path to project root
  * @returns Checker result with violations found
@@ -70,21 +71,19 @@ export function checkDependencies(projectPath: string, resolution?: SourceResolu
     return { violations: [], filesScanned: 0 };
   }
 
-  // Only meaningful for clean architecture projects
-  if (resolution && !resolution.hasCleanArchitecture) {
-    return { violations: [], filesScanned: 0 };
-  }
-
   const sourceFiles = findSourceFiles(srcPath);
   let filesScanned = 0;
+  const hasLayers = sourceFiles.some(f => {
+    const rel = normalizePath(relative(projectPath, f));
+    return getLayer(rel) !== "unknown";
+  });
+
+  // Build import graph for circular dependency detection
+  const importGraph = new Map<string, string[]>();
 
   for (const filePath of sourceFiles) {
     filesScanned++;
     const relativePath = normalizePath(relative(projectPath, filePath));
-    const fileLayer = getLayer(relativePath);
-    const fileFeature = getFeatureName(relativePath);
-
-    if (fileLayer === "unknown") continue;
 
     let content: string;
     try {
@@ -94,23 +93,43 @@ export function checkDependencies(projectPath: string, resolution?: SourceResolu
     }
 
     const imports = extractImports(content);
+    const resolvedImports: string[] = [];
 
     for (const importPath of imports) {
       if (!isRelativeImport(importPath)) continue;
 
-      const violation = checkImportViolation(
-        relativePath,
-        importPath,
-        fileLayer,
-        fileFeature
-      );
-      if (violation) {
-        violations.push({
-          ...violation,
-          filePath: relativePath,
-        });
+      // Resolve relative import to a normalized key
+      const resolvedKey = resolveImportKey(relativePath, importPath);
+      if (resolvedKey) resolvedImports.push(resolvedKey);
+
+      // Layer violation checks — only if project has architecture layers
+      if (hasLayers) {
+        const fileLayer = getLayer(relativePath);
+        const fileFeature = getFeatureName(relativePath);
+        if (fileLayer !== "unknown") {
+          const violation = checkImportViolation(relativePath, importPath, fileLayer, fileFeature);
+          if (violation) {
+            violations.push({ ...violation, filePath: relativePath });
+          }
+        }
       }
     }
+
+    importGraph.set(relativePath, resolvedImports);
+  }
+
+  // Detect circular dependencies via DFS
+  const cycles = detectCircularDeps(importGraph);
+  for (const cycle of cycles) {
+    violations.push({
+      ruleId: "01-architecture",
+      ruleName: "Circular Dependency",
+      severity: "warning",
+      category: "dependency",
+      filePath: cycle[0],
+      description: `Circular dependency: ${cycle.join(" → ")} → ${cycle[0]}`,
+      suggestion: "Break the cycle by extracting shared logic into a separate module or using dependency injection",
+    });
   }
 
   return { violations, filesScanned };
@@ -177,6 +196,71 @@ function checkImportViolation(
   }
 
   return null;
+}
+
+/** Resolve a relative import path to a graph key (without extension). */
+function resolveImportKey(sourceFile: string, importPath: string): string | null {
+  const sourceDir = sourceFile.replace(/\/[^/]+$/, "");
+  const parts = (sourceDir + "/" + importPath).split("/");
+  const resolved: string[] = [];
+  for (const part of parts) {
+    if (part === "." || part === "") continue;
+    if (part === "..") { resolved.pop(); continue; }
+    resolved.push(part);
+  }
+  // Normalize: strip extension-like suffixes for matching
+  const key = resolved.join("/").replace(/\.(ts|tsx|js|jsx|mjs|cjs)$/, "");
+  return key || null;
+}
+
+/** Detect circular dependencies using DFS cycle detection. */
+function detectCircularDeps(graph: Map<string, string[]>): string[][] {
+  const visited = new Set<string>();
+  const inStack = new Set<string>();
+  const cycles: string[][] = [];
+  const reported = new Set<string>();
+
+  // Normalize all graph keys (strip extensions for matching)
+  const normalizedGraph = new Map<string, string[]>();
+  for (const [file, imports] of graph) {
+    const key = file.replace(/\.(ts|tsx|js|jsx|mjs|cjs)$/, "");
+    normalizedGraph.set(key, imports);
+  }
+
+  function dfs(node: string, path: string[]): void {
+    if (inStack.has(node)) {
+      // Found cycle — extract the cycle portion
+      const cycleStart = path.indexOf(node);
+      if (cycleStart >= 0) {
+        const cycle = path.slice(cycleStart);
+        const cycleKey = [...cycle].sort().join("|");
+        if (!reported.has(cycleKey)) {
+          reported.add(cycleKey);
+          cycles.push(cycle);
+        }
+      }
+      return;
+    }
+    if (visited.has(node)) return;
+
+    visited.add(node);
+    inStack.add(node);
+    path.push(node);
+
+    const deps = normalizedGraph.get(node) || [];
+    for (const dep of deps) {
+      dfs(dep, path);
+    }
+
+    path.pop();
+    inStack.delete(node);
+  }
+
+  for (const node of normalizedGraph.keys()) {
+    dfs(node, []);
+  }
+
+  return cycles;
 }
 
 /** Find all TypeScript/JavaScript source files recursively. */

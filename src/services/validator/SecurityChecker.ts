@@ -42,16 +42,24 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
   {
     name: "SQL String Concatenation",
     pattern:
-      /(?:query|sql|exec|execute|raw|stmt|statement)\s*(?:=|:\s*|\()\s*[`'"].*\$\{.*\}.*[`'"]/gi,
+      /(?:query|sql|exec|execute|raw|stmt|statement|prepare)\s*(?:=|:\s*|\()\s*[`'"].*\$\{.*\}.*[`'"]/gi,
     severity: "critical",
     description: "Potential SQL injection via string concatenation/template literals",
     suggestion:
       "Use parameterized queries or prepared statements instead of string interpolation",
   },
   {
+    name: "SQL Injection (prepare with interpolation)",
+    pattern:
+      /\.prepare\s*\(\s*`[^`]*\$\{[^}]+\}[^`]*`\s*\)/gi,
+    severity: "critical",
+    description: "SQL prepared statement uses template literal interpolation — injection risk",
+    suggestion: "Use parameter placeholders: db.prepare('SELECT * FROM x WHERE id = ?').get(id)",
+  },
+  {
     name: "SQL Concatenation (plus operator)",
     pattern:
-      /(?:query|exec|execute)\s*\(\s*['"].*['"]\s*\+\s*(?:req\.|params\.|body\.|query\.)/gi,
+      /(?:query|exec|execute|prepare)\s*\(\s*['"].*['"]\s*\+\s*(?:req\.|params\.|body\.|query\.|[a-zA-Z_]+\s*\))/gi,
     severity: "critical",
     description: "SQL query built with string concatenation using user input",
     suggestion: "Use parameterized queries: db.query('SELECT * FROM x WHERE id = ?', [id])",

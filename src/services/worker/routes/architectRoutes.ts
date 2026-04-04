@@ -13,7 +13,7 @@ import { countBySeverity, countByRule } from "../../validator/ComplianceScorer";
 import { generateFeature } from "../../scaffolder/FeatureGenerator";
 import { existsSync, readFileSync, readdirSync } from "fs";
 import { join, basename } from "path";
-import { getRulesDir } from "../../../utils/paths";
+import { getRulesDir, normalizePlatformPath } from "../../../utils/paths";
 import { parseFrontmatter } from "../../../utils/frontmatter";
 import { getEnabledManualRules } from "../../sqlite/Projects";
 import { getActiveSession } from "../../sqlite/Socratic";
@@ -29,9 +29,20 @@ import type { SocraticContext } from "../../socratic/SocraticTypes";
 export function registerArchitectRoutes(router: Router, db: Database): void {
   // Compliance check
   router.get("/api/check", (req: Request, res: Response) => {
-    const projectPath = req.query.project_path as string;
-    if (!projectPath || typeof projectPath !== "string") {
+    const rawPath = req.query.project_path as string;
+    if (!rawPath || typeof rawPath !== "string") {
       res.status(400).json({ error: "project_path query parameter required" });
+      return;
+    }
+
+    const projectPath = normalizePlatformPath(rawPath);
+
+    // Validate path exists before scanning
+    if (!existsSync(projectPath)) {
+      res.status(404).json({
+        error: `Project path does not exist: ${projectPath}`,
+        suggestion: "Verify the path and try again. Use absolute paths (e.g., C:/Users/...).",
+      });
       return;
     }
 
@@ -65,15 +76,16 @@ export function registerArchitectRoutes(router: Router, db: Database): void {
 
   // Feature scaffolding — uses Socratic context when available
   router.post("/api/scaffold", (req: Request, res: Response) => {
-    const { project_path, feature_name, description, with_tests } = req.body;
-    if (!project_path || !feature_name) {
+    const { project_path: rawProjPath, feature_name, description, with_tests } = req.body;
+    if (!rawProjPath || !feature_name) {
       res.status(400).json({ error: "project_path and feature_name are required" });
       return;
     }
-    if (typeof project_path !== "string" || typeof feature_name !== "string") {
+    if (typeof rawProjPath !== "string" || typeof feature_name !== "string") {
       res.status(400).json({ error: "project_path and feature_name must be strings" });
       return;
     }
+    const project_path = normalizePlatformPath(rawProjPath);
 
     try {
       // Step 1: Detect project language BEFORE creating any files
