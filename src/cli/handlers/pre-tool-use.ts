@@ -11,7 +11,7 @@ import { getKbIndexPath } from "../../utils/paths";
 import { logger } from "../../utils/logger";
 import { getDatabase } from "../../services/sqlite/Database";
 import { getActiveSession } from "../../services/sqlite/Socratic";
-import { isWebSearchRequired, recordWebSearch } from "../../services/sqlite/Enforcement";
+import { shouldBlock, recordSearch } from "../../services/enforcement/FileEnforcement";
 import type { KbLookupResult } from "../../services/kb/KbTypes";
 
 const MAX_OUTPUT_CHARS = 2500;
@@ -23,15 +23,16 @@ export default async function handlePreToolUse(): Promise<void> {
 
     // WebSearch tool → record search and pass through
     if (/WebSearch|web_search/i.test(toolName)) {
-      trackWebSearch();
+      recordSearch();
       process.stdout.write("Success");
       return;
     }
 
     // For Write/Edit: enforce web search requirement
-    const blockMessage = checkWebSearchEnforcement();
-    if (blockMessage) {
-      process.stdout.write(blockMessage);
+    const blockResult = shouldBlock();
+    if (blockResult.blocked) {
+      process.stdout.write(formatBlockMessage(blockResult.gaps));
+      process.exitCode = 2;
       return;
     }
 
@@ -80,39 +81,17 @@ export default async function handlePreToolUse(): Promise<void> {
   }
 }
 
-/** Record that a web search was performed in this session. */
-function trackWebSearch(): void {
-  try {
-    const sessionId = process.env.CLAUDE_SESSION_ID;
-    if (!sessionId) return;
-    const db = getDatabase();
-    recordWebSearch(db, sessionId);
-  } catch {
-    // Non-critical — don't block the search
-  }
-}
-
-/** Block Write/Edit if KB gaps exist but no web search was done. */
-function checkWebSearchEnforcement(): string | null {
-  try {
-    const sessionId = process.env.CLAUDE_SESSION_ID;
-    if (!sessionId) return null;
-    const db = getDatabase();
-    const { required, concepts } = isWebSearchRequired(db, sessionId);
-    if (!required) return null;
-
-    return (
-      `# [claude-architect] BLOCKED: Web search required before writing code\n\n` +
-      `The plugin detected KB gaps for: **${concepts.join(", ")}**\n` +
-      `You MUST call WebSearch for these topics BEFORE writing any code.\n\n` +
-      `## Required actions:\n` +
-      concepts.map((c) => `- WebSearch: "${c} best practices"\n`).join("") +
-      `\nAfter searching, you may proceed with Write/Edit. This block will auto-clear.\n` +
-      `This is a MANDATORY plugin requirement — not a suggestion.`
-    );
-  } catch {
-    return null;
-  }
+/** Format the blocking message shown to Claude when Write/Edit is denied. */
+function formatBlockMessage(gaps: string[]): string {
+  return (
+    `# [claude-architect] BLOCKED: Web search required before writing code\n\n` +
+    `The plugin detected KB gaps for: **${gaps.join(", ")}**\n` +
+    `You MUST call WebSearch for these topics BEFORE writing any code.\n\n` +
+    `## Required actions:\n` +
+    gaps.map((c) => `- WebSearch: "${c} best practices"\n`).join("") +
+    `\nAfter searching, you may proceed with Write/Edit. This block will auto-clear.\n` +
+    `This is a MANDATORY plugin requirement — not a suggestion.`
+  );
 }
 
 /** Warn if writing code without Socratic validation. */

@@ -10,7 +10,7 @@ import { readFileSync } from "fs";
 import { getDatabase } from "../../services/sqlite/Database";
 import { findProjectByPath } from "../../services/sqlite/Projects";
 import { getOpenViolations } from "../../services/sqlite/Violations";
-import { recordKbGaps } from "../../services/sqlite/Enforcement";
+import { writeGaps } from "../../services/enforcement/FileEnforcement";
 import { getProjectPath } from "../../utils/paths";
 import { loadConfig } from "../../utils/config";
 import { lookupByPrompt } from "../../services/kb/KbLookup";
@@ -153,14 +153,8 @@ function buildKbGuidance(
       `Apply findings with [WEB] tag. This is NOT optional — the plugin requires it.`,
     );
 
-    // Persist gaps so PreToolUse hook can enforce web search
-    try {
-      const sessionId = process.env.CLAUDE_SESSION_ID;
-      if (sessionId) {
-        const db = getDatabase();
-        recordKbGaps(db, sessionId, gaps.map((g) => g.concept));
-      }
-    } catch { /* non-critical */ }
+    // Persist gaps so PreToolUse hook can block Write/Edit until web search is done
+    writeGaps(gaps.map((g) => g.concept));
   }
 
   // Violations context (non-critical)
@@ -209,6 +203,9 @@ function buildNoKbOutput(dashboardUrl: string, gaps: KbGap[]): string {
     }
     parts.push(``);
     parts.push(`For each search result, apply the findings with [WEB] tag in your implementation.`);
+
+    // Persist gaps so PreToolUse hook can block Write/Edit until web search is done
+    writeGaps(gaps.map((g) => g.concept));
   }
 
   parts.push(``);

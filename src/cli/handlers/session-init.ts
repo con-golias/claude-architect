@@ -11,6 +11,7 @@ import { getRecentDecisions } from "../../services/sqlite/Decisions";
 import { getOpenViolations, getViolationCounts } from "../../services/sqlite/Violations";
 import { getLatestSnapshot, getComplianceTrend } from "../../services/sqlite/Compliance";
 import { startSession } from "../../services/sqlite/Sessions";
+import { clearState } from "../../services/enforcement/FileEnforcement";
 import { logger } from "../../utils/logger";
 import { getProjectPath } from "../../utils/paths";
 import { loadConfig } from "../../utils/config";
@@ -23,6 +24,9 @@ import { basename } from "path";
  */
 export default async function handleSessionInit(): Promise<void> {
   const dashboardUrl = `http://localhost:${loadConfig().workerPort}`;
+
+  // Clear stale enforcement state from previous sessions
+  clearState();
 
   try {
     const projectPath = getProjectPath();
