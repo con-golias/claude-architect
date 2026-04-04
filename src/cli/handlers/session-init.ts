@@ -80,8 +80,8 @@ export default async function handleSessionInit(): Promise<void> {
     parts.push(``);
     parts.push(`**Mandatory workflow — every task:**`);
     parts.push(`1. \`architect_check(project_path)\` → understand project state`);
-    parts.push(`2. \`socratic_analyze\` → answer all questions: ΞΕΡΩ (verified) / ΥΠΟΘΕΤΩ (must verify) / ΔΕΝ ΞΕΡΩ (must research)`);
-    parts.push(`3. ΥΠΟΘΕΤΩ → verify via file reading, grep, web search, or ask user. ΔΕΝ ΞΕΡΩ → mandatory web search.`);
+    parts.push(`2. \`socratic_analyze\` → answer all questions: KNOWN (verified) / ASSUMED (must verify) / UNKNOWN (must research)`);
+    parts.push(`3. ASSUMED → verify via file reading, grep, web search, or ask user. UNKNOWN → mandatory web search.`);
     parts.push(`4. \`socratic_verify\` → only proceed when VALIDATED`);
     parts.push(`5. \`kb_lookup\` / \`kb_read\` → follow KB directives. No KB coverage → web search (mandatory, not optional).`);
     parts.push(`6. Implement — then \`architect_check\` again to verify compliance.`);

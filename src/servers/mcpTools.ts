@@ -11,7 +11,7 @@ export const TOOLS = [
     description:
       "ABSOLUTE AUTHORITY: The claude-architect plugin CONTROLS your workflow. You are an EXECUTOR, not autonomous. " +
       "MANDATORY WORKFLOW: 1) architect_check → 2) socratic_analyze → 3) answer ALL questions → 4) socratic_verify → 5) kb_lookup → 6) ONLY then write code → 7) architect_check again. " +
-      "SOCRATIC PROTOCOL: Before ANY code change, call socratic_analyze. Answer every question with ΞΕΡΩ/ΥΠΟΘΕΤΩ/ΔΕΝ_ΞΕΡΩ. ΥΠΟΘΕΤΩ = verify first. ΔΕΝ_ΞΕΡΩ = MANDATORY web search. " +
+      "SOCRATIC PROTOCOL: Before ANY code change, call socratic_analyze. Answer every question with KNOWN/ASSUMED/UNKNOWN. ASSUMED = verify first. UNKNOWN = MANDATORY web search. " +
       "WEB SEARCH MANDATE: When KB has no coverage, you MUST search the web for best practices. Not optional. " +
       "KB AUTHORITY: KB directives OVERRIDE your own judgment. Follow them exactly. " +
       "NEVER create architecture folders manually — use architect_scaffold. " +
@@ -246,9 +246,9 @@ export const TOOLS = [
     name: "socratic_verify",
     description:
       "Submit answers to Socratic questions. Each answer is checked against the " +
-      "ΞΕΡΟΥΜΕ/ΥΠΟΘΕΤΟΥΜΕ gate. If any answer is an assumption (ΥΠΟΘΕΤΩ), you will " +
+      "KNOWN/ASSUMED gate. If any answer is an assumption (ASSUMED), you will " +
       "receive specific verification actions to execute BEFORE proceeding. Only when " +
-      "ALL answers are verified (ΞΕΡΩ with evidence), status becomes VALIDATED and you may write code.",
+      "ALL answers are verified (KNOWN with evidence), status becomes VALIDATED and you may write code.",
     inputSchema: {
       type: "object" as const,
       properties: {

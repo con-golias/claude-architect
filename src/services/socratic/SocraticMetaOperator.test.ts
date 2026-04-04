@@ -38,7 +38,7 @@ describe("SocraticMetaOperator", () => {
       );
       expect(result).not.toBeNull();
       expect(result!.dimension).toBe(Dimension.APO_TI);
-      expect(result!.description).toContain("ΥΠΟΘΕΣΗ");
+      expect(result!.description).toContain("ASSUMPTION");
     });
 
     test("DEN_KSERO → returns verification command", () => {
@@ -47,7 +47,7 @@ describe("SocraticMetaOperator", () => {
         Dimension.POU,
       );
       expect(result).not.toBeNull();
-      expect(result!.description).toContain("ΔΕΝ ΞΕΡΕΙΣ");
+      expect(result!.description).toContain("UNKNOWN");
     });
 
     test("APO_TI dimension → READ_CODEBASE method", () => {

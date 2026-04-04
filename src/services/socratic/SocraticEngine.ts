@@ -117,7 +117,7 @@ export function analyze(db: Database, input: AnalyzeInput): AnalyzeResult {
     tier,
     questionCount: questions.length,
     questionsByDimension,
-    summary: `Analyzing: ${questions.length} questions across 7 dimensions (${tier} tier). Answer each — for every answer, state: ΞΕΡΩ / ΥΠΟΘΕΤΩ / ΔΕΝ ΞΕΡΩ.`,
+    summary: `Analyzing: ${questions.length} questions across 7 dimensions (${tier} tier). Answer each — for every answer, state: KNOWN / ASSUMED / UNKNOWN.`,
   };
 }
 

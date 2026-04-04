@@ -9,28 +9,28 @@
 
 /** Aristotle's causes + place/time/subject */
 export enum Dimension {
-  TI = "TI",             // Τυπικό αίτιο — What
-  GIATI = "GIATI",       // Τελικό αίτιο — Why
-  APO_TI = "APO_TI",     // Υλικό αίτιο — From what
-  POS = "POS",           // Ποιητικό αίτιο — How
-  POTE = "POTE",         // Χρόνος — When
-  POIOS = "POIOS",       // Υποκείμενο — Who
-  POU = "POU",           // Τόπος — Where
+  TI = "TI",             // Formal cause — What
+  GIATI = "GIATI",       // Final cause — Why
+  APO_TI = "APO_TI",     // Material cause — From what
+  POS = "POS",           // Efficient cause — How
+  POTE = "POTE",         // Time — When
+  POIOS = "POIOS",       // Subject — Who
+  POU = "POU",           // Location — Where
 }
 
 /** Modal logic operators */
 export enum Operator {
-  EINAI = "EINAI",             // Κατάφαση — Is
-  DEN_EINAI = "DEN_EINAI",     // Άρνηση — Is not
-  PREPEI = "PREPEI",           // Δεοντικό — Must
-  DEN_PREPEI = "DEN_PREPEI",   // Απαγόρευση — Must not
-  MPOREI = "MPOREI",           // Δυνατότητα — Can
-  DEN_MPOREI = "DEN_MPOREI",   // Αδυναμία — Cannot
-  ALLAZEI = "ALLAZEI",         // Μεταβολή — Changes
-  EKSARTATAI = "EKSARTATAI",   // Εξάρτηση — Depends on
-  PROKALEI = "PROKALEI",       // Αιτιότητα — Causes
-  MOIAZEI = "MOIAZEI",         // Αναλογία — Resembles
-  ORIO = "ORIO",               // Σύνορο — Boundary
+  EINAI = "EINAI",             // Affirmation — Is
+  DEN_EINAI = "DEN_EINAI",     // Negation — Is not
+  PREPEI = "PREPEI",           // Deontic — Must
+  DEN_PREPEI = "DEN_PREPEI",   // Prohibition — Must not
+  MPOREI = "MPOREI",           // Possibility — Can
+  DEN_MPOREI = "DEN_MPOREI",   // Impossibility — Cannot
+  ALLAZEI = "ALLAZEI",         // Mutation — Changes
+  EKSARTATAI = "EKSARTATAI",   // Dependency — Depends on
+  PROKALEI = "PROKALEI",       // Causality — Causes
+  MOIAZEI = "MOIAZEI",         // Analogy — Resembles
+  ORIO = "ORIO",               // Limit — Boundary
 }
 
 /** Confidence level for the META-OPERATOR gate */
@@ -176,25 +176,25 @@ export interface StatusResult {
 /* ── Verified context (zero coupling — data only) ───────── */
 
 export interface SocraticContext {
-  /** Programming language detected — from ΑΠΟ_ΤΙ×ΕΙΝΑΙ */
+  /** Programming language detected — from APO_TI×EINAI */
   language: string | null;
-  /** Framework/runtime — from ΑΠΟ_ΤΙ×ΕΙΝΑΙ */
+  /** Framework/runtime — from APO_TI×EINAI */
   framework: string | null;
-  /** Project structure type — from ΠΟΥ×ΕΙΝΑΙ */
+  /** Project structure type — from POU×EINAI */
   projectStructure: "flat" | "feature-first" | "clean-arch" | null;
-  /** Actual directory paths found — from ΠΟΥ×ΕΙΝΑΙ */
+  /** Actual directory paths found — from POU×EINAI */
   directories: string[];
-  /** Constraints and prohibitions — from ΤΙ×ΔΕΝ_ΠΡΕΠΕΙ + ΤΙ×ΠΡΕΠΕΙ */
+  /** Constraints and prohibitions — from TI×DEN_PREPEI + TI×PREPEI */
   constraints: string[];
-  /** Full technology list — from ΑΠΟ_ΤΙ×ΕΙΝΑΙ */
+  /** Full technology list — from APO_TI×EINAI */
   technologies: string[];
-  /** Existing patterns found — from ΠΩΣ×ΜΟΙΑΖΕΙ + ΠΟΥ×ΜΟΙΑΖΕΙ */
+  /** Existing patterns found — from POS×MOIAZEI + POU×MOIAZEI */
   patterns: string[];
   /** All verified dimension→answer pairs */
   verifiedFacts: Record<string, string>;
-  /** File paths found — from ΠΟΥ dimension */
+  /** File paths found — from POU dimension */
   filePaths: string[];
-  /** Stakeholders — from ΠΟΙΟΣ×ΕΙΝΑΙ */
+  /** Stakeholders — from POIOS×EINAI */
   stakeholders: string[];
 }
 

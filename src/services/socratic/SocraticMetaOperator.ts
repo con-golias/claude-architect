@@ -1,5 +1,5 @@
 /**
- * META-OPERATOR: ΞΕΡΟΥΜΕ / ΥΠΟΘΕΤΟΥΜΕ enforcement gate.
+ * META-OPERATOR: KNOWN / ASSUMED enforcement gate.
  * Applied to EVERY answer — the most critical part of the system.
  * If Claude assumes → BLOCKED → verification required.
  *
@@ -41,8 +41,8 @@ export function evaluateConfidence(
 
   const reason =
     answer.confidence === Confidence.YPOTHETO
-      ? "ΥΠΟΘΕΣΗ — πρέπει verification πριν προχωρήσεις"
-      : "ΔΕΝ ΞΕΡΕΙΣ — ψάξε πρώτα";
+      ? "ASSUMPTION — verify before proceeding"
+      : "UNKNOWN — research first";
 
   return {
     questionId: answer.questionId,
