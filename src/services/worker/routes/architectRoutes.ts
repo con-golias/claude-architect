@@ -156,7 +156,8 @@ export function registerArchitectRoutes(router: Router, db: Database): void {
   router.get("/api/rules", (req: Request, res: Response) => {
     const filePath = req.query.file_path as string | undefined;
     const category = req.query.category as string | undefined;
-    const projectPath = req.query.project_path as string | undefined;
+    const rawProjectPath = req.query.project_path as string | undefined;
+    const projectPath = rawProjectPath ? normalizePlatformPath(rawProjectPath) : undefined;
     const rulesDir = getRulesDir();
 
     if (!existsSync(rulesDir)) {

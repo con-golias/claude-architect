@@ -168,14 +168,17 @@ export function checkSecurity(projectPath: string, resolution?: SourceResolution
 
           while ((match = regex.exec(content)) !== null) {
             const lineNumber = content.substring(0, match.index).split("\n").length;
-            const lineContent = lines[lineNumber - 1]?.trim() || "";
+            const rawLine = lines[lineNumber - 1] || "";
+            const trimmedLine = rawLine.trim();
 
-            // Skip if it's a comment or inside a string literal
-            if (lineContent.startsWith("//") || lineContent.startsWith("*")) {
+            // Skip full-line comments
+            if (trimmedLine.startsWith("//") || trimmedLine.startsWith("*")) {
               continue;
             }
-            const matchStartInLine = match.index - content.lastIndexOf("\n", match.index - 1) - 1;
-            if (isInsideStringLiteral(lineContent, matchStartInLine)) {
+            // Calculate match position relative to the raw (untrimmed) line
+            const lineStartOffset = content.lastIndexOf("\n", match.index - 1) + 1;
+            const matchStartInLine = match.index - lineStartOffset;
+            if (isInsideStringLiteral(rawLine, matchStartInLine)) {
               continue;
             }
 

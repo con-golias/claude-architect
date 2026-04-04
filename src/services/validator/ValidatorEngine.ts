@@ -54,7 +54,9 @@ export function validateProject(
 
   let allViolations: Violation[] = [];
   let features: FeatureInfo[] = [];
-  let totalFiles = 0;
+  // Track max files across checkers that scan the same file set,
+  // rather than summing (which would double-count shared files).
+  let maxFilesScanned = 0;
 
   // Always run baseline project-level checks
   const baselineResult = checkBaseline(projectPath);
@@ -64,7 +66,7 @@ export function validateProject(
   if (shouldRunCategory("dependency", options.categories)) {
     const depResult = checkDependencies(projectPath, resolution);
     allViolations.push(...depResult.violations);
-    totalFiles += depResult.filesScanned;
+    maxFilesScanned = Math.max(maxFilesScanned, depResult.filesScanned);
   }
 
   // Run structure checks (includes API pattern checks)
@@ -75,14 +77,14 @@ export function validateProject(
 
     const apiResult = checkAPIPatterns(projectPath, resolution);
     allViolations.push(...apiResult.violations);
-    totalFiles = Math.max(totalFiles, apiResult.filesScanned);
+    maxFilesScanned = Math.max(maxFilesScanned, apiResult.filesScanned);
   }
 
   // Run security checks (original + OWASP + privacy)
   if (shouldRunCategory("security", options.categories)) {
     const secResult = checkSecurity(projectPath, resolution);
     allViolations.push(...secResult.violations);
-    totalFiles = Math.max(totalFiles, secResult.filesScanned);
+    maxFilesScanned = Math.max(maxFilesScanned, secResult.filesScanned);
 
     const owaspResult = checkOWASP(projectPath, resolution);
     allViolations.push(...owaspResult.violations);
@@ -98,7 +100,7 @@ export function validateProject(
   ) {
     const qualResult = checkQuality(projectPath, resolution);
     allViolations.push(...qualResult.violations);
-    totalFiles = Math.max(totalFiles, qualResult.filesScanned);
+    maxFilesScanned = Math.max(maxFilesScanned, qualResult.filesScanned);
   }
 
   // Run advanced quality checkers — only for quality category, NOT docs
@@ -120,7 +122,7 @@ export function validateProject(
   ) {
     const docResult = checkDocumentation(projectPath, resolution);
     allViolations.push(...docResult.violations);
-    totalFiles = Math.max(totalFiles, docResult.filesScanned);
+    maxFilesScanned = Math.max(maxFilesScanned, docResult.filesScanned);
   }
 
   // Filter by severity if specified
@@ -132,9 +134,9 @@ export function validateProject(
     );
   }
 
-  const overallScore = calculateOverallScore(allViolations, totalFiles);
+  const overallScore = calculateOverallScore(allViolations, maxFilesScanned);
   const scoresByCategory = calculateCategoryScores(allViolations);
-  const scanCoverage = totalFiles === 0 ? "none" as const : "full" as const;
+  const scanCoverage = maxFilesScanned === 0 ? "none" as const : "full" as const;
 
   const duration = Date.now() - startTime;
   logger.info("Validation complete", {
@@ -149,7 +151,7 @@ export function validateProject(
     overallScore,
     scoresByCategory,
     totalFeatures: features.length,
-    totalFiles,
+    totalFiles: maxFilesScanned,
     violations: allViolations,
     featureMap: features,
     trend: "stable",

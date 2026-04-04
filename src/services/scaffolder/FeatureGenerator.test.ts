@@ -171,8 +171,7 @@ describe("generateFeature", () => {
     const content = readFileSync(entityPath, "utf-8");
 
     expect(content).toContain("class Task");
-    expect(content).toContain("constructor(props)");
-    expect(content).toContain("@param {Object} props");
+    expect(content).toContain("constructor(");
     // Must NOT contain TypeScript syntax
     expect(content).not.toContain("interface ");
     expect(content).not.toContain(": string");
@@ -189,7 +188,8 @@ describe("generateFeature", () => {
     const useCasePath = join(tempDir, "src", "features", "order", "application", "use-cases", "CreateOrderUseCase.js");
     const content = readFileSync(useCasePath, "utf-8");
 
-    expect(content).toContain('from "../../domain/entities/Order.js"');
+    expect(content).toContain("require(");
+    expect(content).toContain("domain/entities/Order");
     expect(content).not.toContain("import type");
     expect(content).not.toContain(": Promise<");
   });

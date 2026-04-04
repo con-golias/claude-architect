@@ -115,7 +115,7 @@ export function checkDependencies(projectPath: string, resolution?: SourceResolu
       }
     }
 
-    importGraph.set(relativePath, resolvedImports);
+    importGraph.set(normalizePath(relativePath), resolvedImports);
   }
 
   // Detect circular dependencies via DFS
@@ -198,9 +198,10 @@ function checkImportViolation(
   return null;
 }
 
-/** Resolve a relative import path to a graph key (without extension). */
+/** Resolve a relative import path to a normalized graph key. */
 function resolveImportKey(sourceFile: string, importPath: string): string | null {
-  const sourceDir = sourceFile.replace(/\/[^/]+$/, "");
+  const normalized = normalizePath(sourceFile);
+  const sourceDir = normalized.replace(/\/[^/]+$/, "");
   const parts = (sourceDir + "/" + importPath).split("/");
   const resolved: string[] = [];
   for (const part of parts) {
@@ -208,7 +209,6 @@ function resolveImportKey(sourceFile: string, importPath: string): string | null
     if (part === "..") { resolved.pop(); continue; }
     resolved.push(part);
   }
-  // Normalize: strip extension-like suffixes for matching
   const key = resolved.join("/").replace(/\.(ts|tsx|js|jsx|mjs|cjs)$/, "");
   return key || null;
 }
