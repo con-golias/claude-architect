@@ -31,6 +31,7 @@ const SIGNIFICANT_KEYWORDS: RegExp[] = [
   /\b(refactor|rewrite|restructur|redesign|overhaul)\b/i,
   /\b(migrat|authentication|authorization|auth)\b/i,
   /\b(security|encrypt|secret|credential|token)\b/i,
+  /\b(payment|billing|checkout|subscription|PCI|Stripe|PayPal)\b/i,
   /\bnew\s+(system|service|module|engine|layer|architecture)\b/i,
   /\b(breaking\s+change|api\s+change|schema\s+change)\b/i,
 ];
