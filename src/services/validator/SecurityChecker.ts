@@ -106,6 +106,22 @@ const SECURITY_PATTERNS: SecurityPattern[] = [
       "Configure CORS with explicit origin allowlist instead of wildcard",
   },
   {
+    name: "localStorage Token Storage",
+    pattern: /localStorage\.(setItem|getItem)\s*\(\s*['"](?:token|accessToken|refreshToken|auth|session|jwt|apiKey|secret)['"]/gi,
+    severity: "critical",
+    description: "Auth token stored in localStorage — vulnerable to XSS theft",
+    suggestion:
+      "NEVER store auth tokens in localStorage. Use httpOnly cookies instead. Any XSS attack can steal localStorage tokens.",
+  },
+  {
+    name: "sessionStorage Token Storage",
+    pattern: /sessionStorage\.(setItem|getItem)\s*\(\s*['"](?:token|accessToken|refreshToken|auth|session|jwt)['"]/gi,
+    severity: "warning",
+    description: "Auth token in sessionStorage — vulnerable to XSS",
+    suggestion:
+      "Use httpOnly cookies for auth tokens. sessionStorage is accessible to any script on the page.",
+  },
+  {
     name: "Console.log in Production",
     pattern: /console\.(log|debug|trace)\s*\(/g,
     severity: "info",

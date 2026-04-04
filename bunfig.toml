@@ -4,3 +4,4 @@ peer = false
 [test]
 coverage = true
 coverageDir = "coverage"
+roots = ["src"]

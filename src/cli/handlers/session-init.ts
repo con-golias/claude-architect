@@ -109,6 +109,16 @@ export default async function handleSessionInit(): Promise<void> {
     parts.push(`- Write tests that verify behavior, not implementation. Test WHAT, not HOW.`);
     parts.push(`- Import only what you use. No speculative imports "just in case".`);
 
+    // ═══ ABSOLUTE PROHIBITIONS ═══
+    parts.push(`\n## ABSOLUTE PROHIBITIONS — violating ANY of these = FAILURE`);
+    parts.push(`1. **NEVER use the Agent tool.** Do everything yourself, sequentially. Agents bypass Socratic validation and produce unreviewed code. No exceptions.`);
+    parts.push(`2. **NEVER store tokens/secrets in localStorage or sessionStorage.** Use httpOnly cookies. If KB says "NEVER localStorage" and you use it anyway, you have failed — even if Socratic said VALIDATED.`);
+    parts.push(`3. **NEVER create module folders manually.** Use \`architect_scaffold\` for every new module/feature. The scaffold enforces clean architecture.`);
+    parts.push(`4. **NEVER skip web search when KB has no coverage.** If the plugin says "no KB articles found" or detects gaps — you MUST search the web BEFORE writing code. Not after, not "I already know" — SEARCH FIRST.`);
+    parts.push(`5. **NEVER write files >200 lines.** Split into focused modules. A 400-line file is a design failure.`);
+    parts.push(`6. **ALWAYS run \`architect_check\` AFTER implementation** — and if score dropped, fix violations before declaring done.`);
+    parts.push(`7. **Your Socratic answers are BINDING.** If you said "KNOWN: must NOT use localStorage" then you MUST NOT use localStorage in your code. Contradicting your own verified answers = critical failure.`);
+
     process.stdout.write(parts.join("\n"));
   } catch (err) {
     // Always output at least the dashboard URL even on failure
