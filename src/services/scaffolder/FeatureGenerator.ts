@@ -1,6 +1,7 @@
 /**
  * Feature scaffold generator.
  * Creates clean architecture folder structure for new features.
+ * Language-aware: generates JS or TS based on detected project language.
  *
  * @module FeatureGenerator
  */
@@ -20,14 +21,16 @@ import {
   generateReadme,
 } from "./FeatureTemplates";
 
-interface ScaffoldOptions {
+export interface ScaffoldOptions {
   projectPath: string;
   featureName: string;
   description?: string;
   withTests?: boolean;
+  /** Detected language — "TypeScript" | "JavaScript" | null. Defaults to TypeScript. */
+  language?: string | null;
 }
 
-interface ScaffoldResult {
+export interface ScaffoldResult {
   createdFiles: string[];
   createdDirs: string[];
   featurePath: string;
@@ -35,6 +38,7 @@ interface ScaffoldResult {
 
 /**
  * Generate a complete feature scaffold with clean architecture structure.
+ * Uses detected language for file extensions and template content.
  *
  * @param options - Scaffold configuration
  * @returns List of created files and directories
@@ -46,11 +50,14 @@ export function generateFeature(options: ScaffoldOptions): ScaffoldResult {
     featureName,
     description = "TODO: Describe this feature",
     withTests = true,
+    language = "TypeScript",
   } = options;
 
   const kebabName = toKebabCase(featureName);
   const pascalName = toPascalCase(featureName);
   const featurePath = join(projectPath, "src", "features", kebabName);
+  const ext = language === "JavaScript" ? "js" : "ts";
+  const lang: "ts" | "js" = ext as "ts" | "js";
 
   if (existsSync(featurePath)) {
     throw new Error(`Feature directory already exists: ${featurePath}`);
@@ -76,16 +83,16 @@ export function generateFeature(options: ScaffoldOptions): ScaffoldResult {
     createdDirs.push(`src/features/${kebabName}/${dir}`);
   }
 
-  // Generate source files
-  const files: Array<[string, string, string]> = [
-    [`domain/entities/${pascalName}.ts`, generateEntity(pascalName, description), "domain/entities"],
-    [`domain/ports/${pascalName}Repository.ts`, generateRepositoryPort(pascalName), "domain/ports"],
-    [`application/dtos/${pascalName}Dto.ts`, generateDto(pascalName), "application/dtos"],
-    [`application/use-cases/Create${pascalName}UseCase.ts`, generateUseCase(pascalName), "application/use-cases"],
-    [`application/mappers/${pascalName}Mapper.ts`, generateMapper(pascalName), "application/mappers"],
-    [`infrastructure/controllers/${pascalName}Controller.ts`, generateController(pascalName), "infrastructure/controllers"],
-    [`infrastructure/repositories/${pascalName}RepositoryImpl.ts`, generateRepositoryImpl(pascalName), "infrastructure/repositories"],
-    ["README.md", generateReadme(kebabName, pascalName, description), ""],
+  // Generate source files with correct extension and language
+  const files: Array<[string, string]> = [
+    [`domain/entities/${pascalName}.${ext}`, generateEntity(pascalName, description, lang)],
+    [`domain/ports/${pascalName}Repository.${ext}`, generateRepositoryPort(pascalName, lang)],
+    [`application/dtos/${pascalName}Dto.${ext}`, generateDto(pascalName, lang)],
+    [`application/use-cases/Create${pascalName}UseCase.${ext}`, generateUseCase(pascalName, lang)],
+    [`application/mappers/${pascalName}Mapper.${ext}`, generateMapper(pascalName, lang)],
+    [`infrastructure/controllers/${pascalName}Controller.${ext}`, generateController(pascalName, lang)],
+    [`infrastructure/repositories/${pascalName}RepositoryImpl.${ext}`, generateRepositoryImpl(pascalName, lang)],
+    ["README.md", generateReadme(kebabName, pascalName, description)],
   ];
 
   for (const [relativePath, content] of files) {
@@ -113,6 +120,7 @@ export function generateFeature(options: ScaffoldOptions): ScaffoldResult {
     feature: kebabName,
     files: createdFiles.length,
     dirs: createdDirs.length,
+    language: lang,
   });
 
   return { createdFiles, createdDirs, featurePath };

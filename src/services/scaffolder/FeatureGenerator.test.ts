@@ -142,4 +142,80 @@ describe("generateFeature", () => {
     expect(content).toContain("interface ProductRepository");
     expect(content).toContain("findById(id: string): Promise<Product | null>");
   });
+
+  /* ── JavaScript language support ──────────────────────── */
+
+  test("generates .js files when language is JavaScript", () => {
+    const result = generateFeature({
+      projectPath: tempDir,
+      featureName: "widget",
+      language: "JavaScript",
+    });
+
+    expect(result.createdFiles).toContainEqual("src/features/widget/domain/entities/Widget.js");
+    expect(result.createdFiles).toContainEqual("src/features/widget/domain/ports/WidgetRepository.js");
+    expect(result.createdFiles).toContainEqual("src/features/widget/application/dtos/WidgetDto.js");
+    expect(result.createdFiles).toContainEqual("src/features/widget/application/use-cases/CreateWidgetUseCase.js");
+    // No .ts files should exist
+    expect(result.createdFiles.every((f) => !f.endsWith(".ts"))).toBe(true);
+  });
+
+  test("JS entity has no TypeScript syntax", () => {
+    generateFeature({
+      projectPath: tempDir,
+      featureName: "task",
+      language: "JavaScript",
+    });
+
+    const entityPath = join(tempDir, "src", "features", "task", "domain", "entities", "Task.js");
+    const content = readFileSync(entityPath, "utf-8");
+
+    expect(content).toContain("class Task");
+    expect(content).toContain("constructor(props)");
+    expect(content).toContain("@param {Object} props");
+    // Must NOT contain TypeScript syntax
+    expect(content).not.toContain("interface ");
+    expect(content).not.toContain(": string");
+    expect(content).not.toContain("readonly ");
+  });
+
+  test("JS use case uses .js imports", () => {
+    generateFeature({
+      projectPath: tempDir,
+      featureName: "order",
+      language: "JavaScript",
+    });
+
+    const useCasePath = join(tempDir, "src", "features", "order", "application", "use-cases", "CreateOrderUseCase.js");
+    const content = readFileSync(useCasePath, "utf-8");
+
+    expect(content).toContain('from "../../domain/entities/Order.js"');
+    expect(content).not.toContain("import type");
+    expect(content).not.toContain(": Promise<");
+  });
+
+  test("JS repository impl has no implements keyword", () => {
+    generateFeature({
+      projectPath: tempDir,
+      featureName: "item",
+      language: "JavaScript",
+    });
+
+    const repoPath = join(tempDir, "src", "features", "item", "infrastructure", "repositories", "ItemRepositoryImpl.js");
+    const content = readFileSync(repoPath, "utf-8");
+
+    expect(content).toContain("class ItemRepositoryImpl");
+    expect(content).not.toContain("implements ");
+    expect(content).not.toContain("import type");
+  });
+
+  test("defaults to TypeScript when language is null", () => {
+    const result = generateFeature({
+      projectPath: tempDir,
+      featureName: "setting",
+      language: null,
+    });
+
+    expect(result.createdFiles.some((f) => f.endsWith(".ts"))).toBe(true);
+  });
 });

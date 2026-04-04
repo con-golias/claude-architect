@@ -201,6 +201,59 @@ export const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 4,
+    description: "Socratic Reasoning Engine tables",
+    up: (db: Database) => {
+      db.run(`
+        CREATE TABLE IF NOT EXISTS socratic_sessions (
+          id TEXT PRIMARY KEY,
+          prompt TEXT NOT NULL,
+          action_type TEXT NOT NULL,
+          action_description TEXT NOT NULL,
+          affected_scope TEXT NOT NULL,
+          tier TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'ANALYZING',
+          recursion_level INTEGER NOT NULL DEFAULT 0,
+          parent_question_id TEXT,
+          created_at INTEGER NOT NULL,
+          validated_at INTEGER,
+          expires_at INTEGER NOT NULL
+        )
+      `);
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS socratic_answers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          session_id TEXT NOT NULL,
+          question_id TEXT NOT NULL,
+          dimension TEXT NOT NULL,
+          operator TEXT NOT NULL,
+          question TEXT NOT NULL,
+          answer TEXT,
+          confidence TEXT,
+          evidence TEXT,
+          atomicity TEXT,
+          verified_at INTEGER,
+          created_at INTEGER NOT NULL,
+          FOREIGN KEY (session_id) REFERENCES socratic_sessions(id)
+        )
+      `);
+
+      db.run(
+        `CREATE INDEX IF NOT EXISTS idx_socratic_sessions_status ON socratic_sessions(status, created_at DESC)`
+      );
+      db.run(
+        `CREATE INDEX IF NOT EXISTS idx_socratic_sessions_expires ON socratic_sessions(expires_at)`
+      );
+      db.run(
+        `CREATE INDEX IF NOT EXISTS idx_socratic_answers_session ON socratic_answers(session_id)`
+      );
+      db.run(
+        `CREATE INDEX IF NOT EXISTS idx_socratic_answers_confidence ON socratic_answers(session_id, confidence)`
+      );
+    },
+  },
 ];
 
 /**

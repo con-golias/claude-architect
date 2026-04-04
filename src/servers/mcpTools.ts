@@ -12,6 +12,7 @@ export const TOOLS = [
       "YOU MUST USE THESE TOOLS — they are your architecture assistant. " +
       "ALWAYS run architect_check(project_path) at the start of any task to understand project health. " +
       "ALWAYS use architect_scaffold for new features — NEVER create folder structures manually. " +
+      "BEFORE significant code changes: call socratic_analyze first, answer all questions, verify with socratic_verify. NO ASSUMPTIONS. " +
       "Use kb_lookup before writing code to get best-practice guidance. " +
       "After significant changes, run architect_check again to verify compliance improved. " +
       "Search workflow: architect_search → architect_get_details (NEVER fetch details without filtering first). " +
@@ -203,6 +204,86 @@ export const TOOLS = [
         rebuild_index: { type: "boolean", description: "Rebuild KB index after creation (default: true)" },
       },
       required: ["topic", "folder_path", "content"],
+    },
+  },
+  {
+    name: "socratic_analyze",
+    description:
+      "MANDATORY: Call BEFORE ANY code change — no exceptions. Generates Socratic questions using " +
+      "7×11 matrix (7 Aristotelian Dimensions × 11 Modal Operators). Returns questions that " +
+      "MUST be answered before proceeding. Every answer will be checked: do you KNOW this or " +
+      "ASSUME this? Assumptions are BLOCKED until verified. There is NO bypass and NO skip — " +
+      "every task goes through Socratic analysis.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        action_description: {
+          type: "string",
+          description: "What you intend to do (min 10 chars). E.g., 'Add authentication middleware to Express API'",
+        },
+        action_type: {
+          type: "string",
+          enum: [
+            "file_creation", "major_refactor", "architecture_change",
+            "dependency_addition", "api_modification", "database_change",
+            "config_change", "security_sensitive", "feature_addition",
+            "bug_fix", "performance_optimization", "other_significant",
+          ],
+          description: "Category of the action",
+        },
+        affected_scope: {
+          type: "string",
+          description: "Files/modules affected. E.g., 'src/middleware/, src/routes/'",
+        },
+        user_original_prompt: {
+          type: "string",
+          description: "The user's exact prompt text",
+        },
+      },
+      required: ["action_description", "action_type", "affected_scope", "user_original_prompt"],
+    },
+  },
+  {
+    name: "socratic_verify",
+    description:
+      "Submit answers to Socratic questions. Each answer is checked against the " +
+      "ΞΕΡΟΥΜΕ/ΥΠΟΘΕΤΟΥΜΕ gate. If any answer is an assumption (ΥΠΟΘΕΤΩ), you will " +
+      "receive specific verification actions to execute BEFORE proceeding. Only when " +
+      "ALL answers are verified (ΞΕΡΩ with evidence), status becomes VALIDATED and you may write code.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        session_id: { type: "string", description: "Session ID from socratic_analyze" },
+        answers: {
+          type: "object",
+          description: "Map of question_id → { answer, confidence, evidence }. " +
+            "confidence: 'KSERO' (verified), 'YPOTHETO' (assumption), 'DEN_KSERO' (unknown). " +
+            "evidence: how you know (grep output, file content, etc.) — required when confidence is KSERO.",
+          additionalProperties: {
+            type: "object",
+            properties: {
+              answer: { type: "string" },
+              confidence: { type: "string", enum: ["KSERO", "YPOTHETO", "DEN_KSERO"] },
+              evidence: { type: "string", nullable: true },
+            },
+            required: ["answer", "confidence"],
+          },
+        },
+      },
+      required: ["session_id", "answers"],
+    },
+  },
+  {
+    name: "socratic_status",
+    description:
+      "Check if pre-action reasoning is complete and validated. " +
+      "Returns current status, verified/assumption counts, and any remaining blocked questions.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        session_id: { type: "string", description: "Session ID from socratic_analyze" },
+      },
+      required: ["session_id"],
     },
   },
 ];

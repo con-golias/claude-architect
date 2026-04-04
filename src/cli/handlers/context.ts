@@ -41,14 +41,21 @@ export default async function handleContext(): Promise<void> {
   try {
     const { results, gaps } = lookupByPrompt(userPrompt, { limit: 5 });
 
-    // If no relevant results found, fall back to generic + gap info
-    if (results.length === 0 && gaps.length === 0) {
-      process.stdout.write(buildGenericOutput(dashboardUrl));
+    // If no relevant results, tell Claude to search the web
+    if (results.length === 0) {
+      process.stdout.write(buildNoKbOutput(dashboardUrl, gaps));
       return;
     }
 
-    // Step 4: Build mandatory guidance output
-    const output = buildKbGuidance(results, gaps, dashboardUrl);
+    // Filter out low-relevance results (score < 5 after ranker fixes)
+    const relevantResults = results.filter((r) => r.score >= 5);
+    if (relevantResults.length === 0) {
+      process.stdout.write(buildNoKbOutput(dashboardUrl, gaps));
+      return;
+    }
+
+    // Step 4: Build guidance with only high-relevance results
+    const output = buildKbGuidance(relevantResults, gaps, dashboardUrl);
     process.stdout.write(output);
   } catch {
     // If KB lookup fails, still output something useful
@@ -161,9 +168,37 @@ function buildGenericOutput(dashboardUrl: string): string {
     `3) kb_lookup for guidance. 4) Report everything — [KB] for KB-guided fixes.`,
   );
   parts.push(`NEVER say "code is clean" without checking every line. End response with dashboard link.`);
+  parts.push(`SOCRATIC: Before significant changes, run socratic_analyze first. No assumptions allowed.`);
 
   appendViolations(parts);
 
+  return parts.join("\n");
+}
+
+/** Build output when KB has no relevant articles — tell Claude to web search. */
+function buildNoKbOutput(dashboardUrl: string, gaps: KbGap[]): string {
+  const parts: string[] = [];
+  parts.push(`# [claude-architect] PROACTIVE DETECTION — No Relevant KB Articles`);
+  parts.push(`Dashboard: ${dashboardUrl}`);
+  parts.push(``);
+  parts.push(`## KB has no specific guidance for this task`);
+  parts.push(`The plugin analyzed your request but found no closely matching KB articles.`);
+  parts.push(`This is normal for topics outside the KB's 1009 articles.`);
+  parts.push(`For unfamiliar patterns or technologies, consider checking official docs or web search.`);
+  parts.push(`For standard CRUD/features, proceed using your own expertise.`);
+
+  if (gaps.length > 0) {
+    parts.push(``);
+    parts.push(`## Topics not covered in KB:`);
+    for (const gap of gaps.slice(0, 5)) {
+      parts.push(`- **"${gap.concept}"** — search the web for best practices`);
+    }
+  }
+
+  parts.push(``);
+  parts.push(`SOCRATIC: Before significant changes, run socratic_analyze first. No assumptions allowed.`);
+
+  appendViolations(parts);
   return parts.join("\n");
 }
 

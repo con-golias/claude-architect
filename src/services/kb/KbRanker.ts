@@ -152,13 +152,13 @@ const PROMPT_WEIGHTS = {
   domainMatch: 3.0,
   keywordMatch: 2.0,
   tagMatch: 1.5,
-  categoryMatch: 1.5,
+  categoryMatch: 3.0,
   directiveBonus: 2.0,
   imperativeBonus: 0.5,
 };
 
-/** Lower threshold for prompt queries (no file-path signals). */
-const PROMPT_MIN_SCORE = 2.0;
+/** Threshold for prompt queries — requires at least one strong signal. */
+const PROMPT_MIN_SCORE = 5.0;
 
 /**
  * Score a KB entry against a prompt analysis.
@@ -198,9 +198,12 @@ export function scoreEntryForPrompt(
     }
   }
 
-  // Signal 4: Category match
+  // Signal 4: Category coherence — strong bonus for matching category
   if (analysis.categories.includes(entry.category)) {
     score += PROMPT_WEIGHTS.categoryMatch;
+  } else if (analysis.categories.length > 0) {
+    // Penalty: article is from a different category than what prompt asks for
+    score -= 2.0;
   }
 
   // Signal 5: Tag overlap

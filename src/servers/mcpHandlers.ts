@@ -220,6 +220,52 @@ export async function handleToolCall(
       );
     }
 
+    /* ── Socratic Reasoning Engine ──────────────────────── */
+
+    case "socratic_analyze": {
+      if (!args.action_description || typeof args.action_description !== "string") {
+        return JSON.stringify({ error: "action_description is required" });
+      }
+      if (!args.action_type || typeof args.action_type !== "string") {
+        return JSON.stringify({ error: "action_type is required" });
+      }
+      if (!args.affected_scope || typeof args.affected_scope !== "string") {
+        return JSON.stringify({ error: "affected_scope is required" });
+      }
+      const analyzeResult = await workerFetch("/api/socratic/analyze", {
+        method: "POST",
+        body: JSON.stringify(args),
+      }) as Record<string, unknown>;
+
+      // Silent reasoning: return summary + questions (Claude processes internally)
+      return JSON.stringify(analyzeResult, null, 2);
+    }
+
+    case "socratic_verify": {
+      if (!args.session_id || typeof args.session_id !== "string") {
+        return JSON.stringify({ error: "session_id is required" });
+      }
+      if (!args.answers || typeof args.answers !== "object") {
+        return JSON.stringify({ error: "answers is required (object)" });
+      }
+      const verifyResult = await workerFetch("/api/socratic/verify", {
+        method: "POST",
+        body: JSON.stringify(args),
+      }) as Record<string, unknown>;
+
+      return JSON.stringify(verifyResult, null, 2);
+    }
+
+    case "socratic_status": {
+      if (!args.session_id || typeof args.session_id !== "string") {
+        return JSON.stringify({ error: "session_id is required" });
+      }
+      const statusResult = await workerFetch(
+        `/api/socratic/status?session_id=${encodeURIComponent(args.session_id)}`
+      );
+      return JSON.stringify(statusResult, null, 2);
+    }
+
     default:
       return JSON.stringify({ error: `Unknown tool: ${name}` });
   }

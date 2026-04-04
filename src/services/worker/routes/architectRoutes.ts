@@ -16,6 +16,9 @@ import { join, basename } from "path";
 import { getRulesDir } from "../../../utils/paths";
 import { parseFrontmatter } from "../../../utils/frontmatter";
 import { getEnabledManualRules } from "../../sqlite/Projects";
+import { getActiveSession } from "../../sqlite/Socratic";
+import { extractContext } from "../../socratic/SocraticBridge";
+import type { SocraticContext } from "../../socratic/SocraticTypes";
 
 /**
  * Register architecture-related routes.
@@ -60,7 +63,7 @@ export function registerArchitectRoutes(router: Router, db: Database): void {
     res.json(report);
   });
 
-  // Feature scaffolding
+  // Feature scaffolding — uses Socratic context when available
   router.post("/api/scaffold", (req: Request, res: Response) => {
     const { project_path, feature_name, description, with_tests } = req.body;
     if (!project_path || !feature_name) {
@@ -73,13 +76,65 @@ export function registerArchitectRoutes(router: Router, db: Database): void {
     }
 
     try {
+      // Step 1: Detect project language BEFORE creating any files
+      let context: SocraticContext | null = null;
+      let detectionSource: "socratic-verified" | "fallback-detection" | "undetected" = "undetected";
+
+      // Check for active Socratic session → use verified context
+      const session = getActiveSession(db);
+      if (session) {
+        context = extractContext(db, session.id);
+        detectionSource = "socratic-verified";
+      }
+
+      // Fallback: detect language/structure from project files
+      const detected = context ?? detectProjectBasics(project_path);
+      if (!context && detected.language) {
+        detectionSource = "fallback-detection";
+      }
+
+      const language = detected?.language ?? null;
+
+      // Step 2: REFUSE to scaffold if language is unknown
+      if (!language) {
+        res.status(422).json({
+          error: "Cannot determine project language. NEVER assume TypeScript.",
+          action: "VERIFY the project language before scaffolding:",
+          verification_steps: [
+            "Read package.json → check for 'typescript' in dependencies/devDependencies",
+            "List files: find . -name '*.js' -o -name '*.ts' | head -20",
+            "Check tsconfig.json existence",
+            "Ask the user what language the project uses",
+          ],
+          hint: "After verifying, call architect_scaffold again. The scaffold will auto-detect.",
+          detectedContext: {
+            language: null,
+            framework: detected?.framework ?? null,
+            projectStructure: detected?.projectStructure ?? null,
+            source: detectionSource,
+          },
+        });
+        return;
+      }
+
+      // Step 3: Scaffold with verified language
       const result = generateFeature({
         projectPath: project_path,
         featureName: feature_name,
         description: typeof description === "string" ? description : undefined,
         withTests: with_tests !== false,
+        language,
       });
-      res.status(201).json(result);
+
+      res.status(201).json({
+        ...result,
+        detectedContext: {
+          language,
+          framework: detected?.framework ?? null,
+          projectStructure: detected?.projectStructure ?? null,
+          source: detectionSource,
+        },
+      });
     } catch (err) {
       res.status(409).json({ error: (err as Error).message });
     }
@@ -142,4 +197,60 @@ export function registerArchitectRoutes(router: Router, db: Database): void {
 
     res.json({ rules });
   });
+}
+
+/* ── Fallback project detection (no Socratic session) ──── */
+
+interface BasicDetection {
+  language: string | null;
+  framework: string | null;
+  projectStructure: "flat" | "feature-first" | "clean-arch" | null;
+}
+
+/**
+ * Minimum viable verification: detect language and structure from project files.
+ * Used when no Socratic session is available — NEVER assume TypeScript.
+ */
+function detectProjectBasics(projectPath: string): BasicDetection {
+  let language: string | null = null;
+  let framework: string | null = null;
+  let projectStructure: BasicDetection["projectStructure"] = null;
+
+  // 1. Read package.json for language + framework
+  const pkgPath = join(projectPath, "package.json");
+  if (existsSync(pkgPath)) {
+    try {
+      const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+      const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+
+      language = deps.typescript || deps["ts-node"] ? "TypeScript" : "JavaScript";
+      if (deps.react || deps["react-dom"]) framework = "React";
+      else if (deps.vue) framework = "Vue";
+      else if (deps.angular) framework = "Angular";
+      else if (deps.express) framework = "Express";
+      else if (deps.fastify) framework = "Fastify";
+      else if (deps.next) framework = "Next.js";
+    } catch { /* malformed package.json */ }
+  }
+
+  // 2. Check for Python
+  if (!language && existsSync(join(projectPath, "requirements.txt"))) language = "Python";
+  if (!language && existsSync(join(projectPath, "pyproject.toml"))) language = "Python";
+
+  // 3. Detect structure from src/ layout
+  const srcPath = join(projectPath, "src");
+  if (existsSync(srcPath)) {
+    try {
+      const dirs = readdirSync(srcPath);
+      if (dirs.includes("domain") || dirs.includes("application") || dirs.includes("infrastructure")) {
+        projectStructure = "clean-arch";
+      } else if (dirs.includes("features") || dirs.includes("modules")) {
+        projectStructure = "feature-first";
+      } else {
+        projectStructure = "flat";
+      }
+    } catch { /* unreadable */ }
+  }
+
+  return { language, framework, projectStructure };
 }

@@ -246,6 +246,17 @@ const COMPOUNDS: Record<string, string> = {
   "session management": "session-management",
   "access control": "authentication-authorization",
   "role based": "rbac-abac",
+  "drag drop": "drag-and-drop",
+  "drag and drop": "drag-and-drop",
+  "dark mode": "theming",
+  "lazy loading": "lazy-loading",
+  "infinite scroll": "pagination",
+  "web socket": "websockets",
+  "web component": "web-components",
+  "service worker": "service-workers",
+  "local storage": "browser-storage",
+  "file management": "file-handling",
+  "duplicate detection": "data-validation",
 };
 
 /** Map concept keywords to top-level KB categories. */
@@ -315,11 +326,21 @@ export function analyzePrompt(prompt: string): PromptAnalysis {
     }
   }
 
-  // Step 5: Synonym expansion
+  // Step 5: Synonym expansion (limited to top 2 per term, skip overly generic)
+  const GENERIC_TERMS = new Set([
+    "modern", "features", "management", "web", "app", "application",
+    "project", "code", "tool", "service", "module", "data", "simple",
+    "basic", "advanced", "best", "good", "bad", "help", "work",
+  ]);
+
   for (const token of concepts) {
+    // Skip generic terms that match too broadly
+    if (GENERIC_TERMS.has(token)) continue;
+
     const synonyms = SYNONYMS[token];
     if (synonyms) {
-      for (const syn of synonyms) expandedTerms.push(syn);
+      // Limit to first 2 synonyms to reduce noise
+      for (const syn of synonyms.slice(0, 2)) expandedTerms.push(syn);
     }
     // Also add the raw token
     expandedTerms.push(token);

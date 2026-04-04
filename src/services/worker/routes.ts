@@ -15,6 +15,7 @@ import { registerDashboardRoutes } from "./routes/dashboardRoutes";
 import { registerTemplateRoutes } from "./routes/templateRoutes";
 import { registerCodeInfoRoutes } from "./routes/codeInfoRoutes";
 import { registerKbRoutes } from "./routes/kbRoutes";
+import { registerSocraticRoutes } from "./routes/socraticRoutes";
 
 /**
  * Register all API routes on the Express app.
@@ -33,6 +34,7 @@ export function registerRoutes(app: Express): void {
   registerTemplateRoutes(router);
   registerCodeInfoRoutes(router);
   registerKbRoutes(router);
+  registerSocraticRoutes(router, db);
 
   app.use(router);
 }

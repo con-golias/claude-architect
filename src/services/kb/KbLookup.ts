@@ -166,7 +166,7 @@ export function lookup(
 
 /**
  * Collect candidate entry IDs using inverted indices.
- * Uses union of matches from multiple dimensions for recall.
+ * Uses intersection-based filtering for precision.
  */
 function collectCandidates(
   index: KbIndex,
@@ -174,7 +174,7 @@ function collectCandidates(
   categoryFilter?: string,
   languageFilter?: string,
 ): Set<string> {
-  const ids = new Set<string>();
+  let ids = new Set<string>();
 
   // By extension
   const extEntries = index.byExtension[context.fileExtension];
@@ -207,22 +207,26 @@ function collectCandidates(
     }
   }
 
-  // By language
+  // By language — INTERSECT (filter out non-matching), not union
   if (languageFilter) {
-    const langEntries = index.byLanguage[languageFilter];
-    if (langEntries) {
-      for (const id of langEntries) ids.add(id);
+    const langEntries = new Set(index.byLanguage[languageFilter] || []);
+    if (langEntries.size > 0) {
+      const filtered = new Set<string>();
+      for (const id of ids) {
+        if (langEntries.has(id)) filtered.add(id);
+      }
+      if (filtered.size > 0) ids = filtered;
     }
   }
 
-  // By category (filter, not add)
+  // By category — INTERSECT (filter, not add)
   if (categoryFilter) {
     const catEntries = new Set(index.byCategory[categoryFilter] || []);
     const filtered = new Set<string>();
     for (const id of ids) {
       if (catEntries.has(id)) filtered.add(id);
     }
-    return filtered.size > 0 ? filtered : ids;
+    if (filtered.size > 0) ids = filtered;
   }
 
   return ids;
@@ -258,8 +262,8 @@ export function lookupByPrompt(
 
   const limit = options.limit || 5;
 
-  // Collect candidates — folder segments first (primary signal)
-  const candidateIds = new Set<string>();
+  // Collect candidates with term-frequency scoring (require multiple hits)
+  const hitCount = new Map<string, number>(); // id → number of term matches
   const folderHitIds = new Set<string>();
   const matchedTerms = new Set<string>();
 
@@ -269,32 +273,50 @@ export function lookupByPrompt(
     const hits = folderIndex[term];
     if (hits) {
       for (const id of hits) {
-        candidateIds.add(id);
+        hitCount.set(id, (hitCount.get(id) || 0) + 1);
         folderHitIds.add(id);
       }
       matchedTerms.add(term);
     }
   }
 
-  // Also check byKeyword and byDomain for broader coverage
+  // Also check byKeyword and byDomain
   for (const term of analysis.expandedTerms) {
     const kwHits = index.byKeyword[term];
     if (kwHits) {
-      for (const id of kwHits) candidateIds.add(id);
+      for (const id of kwHits) {
+        hitCount.set(id, (hitCount.get(id) || 0) + 1);
+      }
       matchedTerms.add(term);
     }
     const domHits = index.byDomain[term];
     if (domHits) {
-      for (const id of domHits) candidateIds.add(id);
+      for (const id of domHits) {
+        hitCount.set(id, (hitCount.get(id) || 0) + 1);
+      }
       matchedTerms.add(term);
     }
   }
 
-  // Add category-level candidates
-  for (const cat of analysis.categories) {
-    const catHits = index.byCategory[cat];
-    if (catHits) {
-      for (const id of catHits) candidateIds.add(id);
+  // FILTER by category — only keep candidates from detected categories
+  const categoryIds = new Set<string>();
+  if (analysis.categories.length > 0) {
+    for (const cat of analysis.categories) {
+      const catHits = index.byCategory[cat];
+      if (catHits) for (const id of catHits) categoryIds.add(id);
+    }
+  }
+
+  // Build final candidate set: require 2+ term matches OR folder hit
+  // If categories detected, also require category match
+  const candidateIds = new Set<string>();
+  for (const [id, count] of hitCount) {
+    const passesCategoryFilter = categoryIds.size === 0 || categoryIds.has(id);
+    const hasMultipleHits = count >= 2;
+    const hasFolderHit = folderHitIds.has(id);
+
+    if (passesCategoryFilter && (hasMultipleHits || hasFolderHit)) {
+      candidateIds.add(id);
     }
   }
 

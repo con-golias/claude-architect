@@ -93,6 +93,17 @@ export default async function handleSessionInit(): Promise<void> {
     parts.push(`Step 4 — END with: "Dashboard: ${dashboardUrl}"`);
     parts.push(`CRITICAL: Never skip issues. Never say "code is clean" unless you checked EVERY line.`);
 
+    // Socratic Pre-Action Protocol — MANDATORY for ALL tasks
+    parts.push(`\n## Socratic Pre-Action Protocol (MANDATORY — NO EXCEPTIONS)`);
+    parts.push(`Before ANY code change — including small fixes:`);
+    parts.push(`1. Call \`socratic_analyze\` with action details → generates 7-77 questions`);
+    parts.push(`2. Answer ALL questions — for each: ΞΕΡΩ (verified) / ΥΠΟΘΕΤΩ (assumption) / ΔΕΝ ΞΕΡΩ`);
+    parts.push(`3. If ΥΠΟΘΕΤΩ → STOP writing code. Verify: Read/Grep for code facts, web search for tech, ask user for decisions`);
+    parts.push(`4. Call \`socratic_verify\` with verified answers`);
+    parts.push(`5. Only when status = VALIDATED → proceed with code`);
+    parts.push(`There is NO bypass. There is NO skip. EVERY task goes through Socratic analysis.`);
+    parts.push(`**ABSOLUTE RULE: No assumptions. If you don't KNOW, don't code it — FIND it first.**`);
+
     process.stdout.write(parts.join("\n"));
   } catch (err) {
     // Always output at least the dashboard URL even on failure
