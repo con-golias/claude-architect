@@ -315,8 +315,15 @@ export function analyzePrompt(prompt: string): PromptAnalysis {
     .split(/\s+/)
     .filter((t) => t.length > 1 && !STOPWORDS.has(t));
 
-  // Step 3: Extract concepts (non-stopword tokens)
-  const concepts = [...new Set(tokens)];
+  // Step 3: Extract concepts (filter noise: UUIDs, hex, paths, short IDs)
+  const concepts = [...new Set(tokens)].filter((t) => {
+    if (t.length > 20) return false;                    // too long — likely UUID/path
+    if (/^[0-9a-f]{8,}$/.test(t)) return false;        // hex string
+    if (/^\d+$/.test(t)) return false;                  // pure number
+    if (/^[a-z0-9]{8,12}$/.test(t) && !/[aeiou]{2}/i.test(t)) return false; // random ID
+    if (t.includes("--") || t.includes("\\")) return false; // path fragment
+    return true;
+  });
 
   // Step 4: Identify technologies
   const technologies: string[] = [];
