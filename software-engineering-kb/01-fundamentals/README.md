@@ -1,32 +1,32 @@
 # Fundamentals
 
-Τα θεμέλια του software engineering: paradigms, patterns, SOLID, clean code, data structures, algorithms. Αυτή η ενότητα καλύπτει τη γνώση που είναι **language-agnostic** — ισχύει ανεξάρτητα από γλώσσα, framework ή πλατφόρμα.
+The foundations of software engineering: paradigms, patterns, SOLID, clean code, data structures, algorithms. This section covers **language-agnostic** knowledge — applicable regardless of language, framework, or platform.
 
-> **185 αρχεία** σε 6 ενότητες
+> **185 files** across 6 sections
 
 ---
 
-## Περιεχόμενα
+## Contents
 
-| # | Ενότητα | Αρχεία | Περιγραφή |
-|---|---------|--------|-----------|
-| 1 | [Clean Code](clean-code/) | 51 | Αρχές καθαρού κώδικα, naming, functions, classes, error handling, testing, refactoring |
+| # | Section | Files | Description |
+|---|---------|-------|-------------|
+| 1 | [Clean Code](clean-code/) | 51 | Clean code principles, naming, functions, classes, error handling, testing, refactoring |
 | 2 | [Data Structures](data-structures/) | 32 | Arrays, stacks, queues, hash tables, trees, graphs, advanced structures |
-| 3 | [Design Patterns](design-patterns/) | 34 | Όλα τα GoF patterns (creational, structural, behavioral) + architectural + modern |
-| 4 | [SOLID Principles](solid-principles/) | 10 | Εις βάθος κάλυψη SOLID: κάθε αρχή, enterprise εφαρμογές, violations, κριτική |
+| 3 | [Design Patterns](design-patterns/) | 34 | All GoF patterns (creational, structural, behavioral) + architectural + modern |
+| 4 | [SOLID Principles](solid-principles/) | 10 | In-depth SOLID coverage: each principle, enterprise applications, violations, critique |
 | 5 | [Programming Paradigms](programming-paradigms/) | 37 | Imperative, OOP, functional, declarative, concurrent, reactive, metaprogramming |
 | 6 | [Algorithms](algorithms/) | 21 | Sorting, searching, graphs, DP, greedy, backtracking, string, bit manipulation |
 
 ---
 
-## Αναλυτική Δομή
+## Detailed Structure
 
-### 1. Clean Code (`clean-code/`) — 51 αρχεία
+### 1. Clean Code (`clean-code/`) — 51 files
 
-Πώς γράφουμε κώδικα που είναι ευανάγνωστος, συντηρήσιμος και επεκτάσιμος.
+How to write code that is readable, maintainable, and extensible.
 
-| Κατηγορία | Θέματα |
-|-----------|--------|
+| Category | Topics |
+|----------|--------|
 | **01-principles/** | SRP, OCP, LSP, ISP, DIP, DRY, KISS, YAGNI, Separation of Concerns, Law of Demeter, Composition over Inheritance, Encapsulation, Abstraction, Boy Scout Rule |
 | **02-naming/** | Naming conventions |
 | **03-functions/** | Functions and methods |
@@ -41,12 +41,12 @@
 | **12-advanced/** | Concurrency, immutability, boundaries & abstractions, dependency injection, performance vs readability |
 | **13-industry-standards/** | Google style guides, Microsoft standards, Meta practices, open source conventions |
 
-### 2. Data Structures (`data-structures/`) — 32 αρχεία
+### 2. Data Structures (`data-structures/`) — 32 files
 
-Πώς οργανώνουμε δεδομένα στη μνήμη και ποια δομή ταιριάζει σε κάθε πρόβλημα.
+How to organize data in memory and which structure fits each problem.
 
-| Κατηγορία | Θέματα |
-|-----------|--------|
+| Category | Topics |
+|----------|--------|
 | **01-arrays-and-lists/** | Static arrays, dynamic arrays, linked lists (singly, doubly, circular) |
 | **02-stacks-and-queues/** | Stacks, queues, deques, priority queues, circular buffer |
 | **03-hash-based/** | Hash tables, hash functions, collision resolution, hash sets |
@@ -55,12 +55,12 @@
 | **06-advanced/** | Bloom filters, skip lists, disjoint sets, segment trees, Fenwick trees |
 | **07-complexity-and-selection/** | Big-O cheatsheet, when to use what |
 
-### 3. Design Patterns (`design-patterns/`) — 34 αρχεία
+### 3. Design Patterns (`design-patterns/`) — 34 files
 
-Επαναχρησιμοποιήσιμες λύσεις σε κοινά σχεδιαστικά προβλήματα.
+Reusable solutions to common design problems.
 
-| Κατηγορία | Θέματα |
-|-----------|--------|
+| Category | Topics |
+|----------|--------|
 | **01-overview/** | Design patterns overview |
 | **02-creational/** | Singleton, Factory Method, Abstract Factory, Builder, Prototype |
 | **03-structural/** | Adapter, Bridge, Composite, Decorator, Facade, Flyweight, Proxy |
@@ -69,12 +69,12 @@
 | **06-modern/** | Middleware, Pub-Sub, Module, Null Object |
 | **07-anti-patterns/** | Common anti-patterns |
 
-### 4. SOLID Principles (`solid-principles/`) — 10 αρχεία
+### 4. SOLID Principles (`solid-principles/`) — 10 files
 
-Εις βάθος ανάλυση των SOLID αρχών, πέρα από τα basics του Clean Code.
+In-depth analysis of SOLID principles, beyond the Clean Code basics.
 
-| Κατηγορία | Θέματα |
-|-----------|--------|
+| Category | Topics |
+|----------|--------|
 | **01-overview/** | SOLID overview |
 | **02-single-responsibility/** | SRP fundamentals |
 | **03-open-closed/** | OCP fundamentals |
@@ -84,14 +84,14 @@
 | **07-solid-in-practice/** | Enterprise applications (Spring Boot, microservices) |
 | **08-solid-beyond-oop/** | Functional & modern (Haskell, Rust, TypeScript) |
 | **09-violations-and-anti-patterns/** | Common violations |
-| **10-criticism-and-pragmatism/** | Pragmatic SOLID — πότε ΔΕΝ χρειάζεται |
+| **10-criticism-and-pragmatism/** | Pragmatic SOLID — when NOT to apply |
 
-### 5. Programming Paradigms (`programming-paradigms/`) — 37 αρχεία
+### 5. Programming Paradigms (`programming-paradigms/`) — 37 files
 
-Τα θεμελιώδη στυλ σκέψης στον προγραμματισμό.
+The fundamental thinking styles in programming.
 
-| Κατηγορία | Θέματα |
-|-----------|--------|
+| Category | Topics |
+|----------|--------|
 | **01-overview/** | Paradigms overview |
 | **02-imperative/** | Procedural, structured programming |
 | **03-object-oriented/** | OOP fundamentals, encapsulation, inheritance, polymorphism, composition vs inheritance, SOLID |
@@ -104,12 +104,12 @@
 | **10-aspect-oriented/** | AOP fundamentals |
 | **11-multi-paradigm/** | Multi-paradigm languages, paradigm comparison |
 
-### 6. Algorithms (`algorithms/`) — 21 αρχεία
+### 6. Algorithms (`algorithms/`) — 21 files
 
-Αλγοριθμική σκέψη, από βασικά sorting μέχρι real-world distributed algorithms.
+Algorithmic thinking, from basic sorting to real-world distributed algorithms.
 
-| Κατηγορία | Θέματα |
-|-----------|--------|
+| Category | Topics |
+|----------|--------|
 | **01-overview/** | Algorithms overview |
 | **02-complexity-analysis/** | Complexity & Big-O |
 | **03-recursion/** | Recursion fundamentals |
@@ -129,27 +129,27 @@
 
 ---
 
-## Πώς συνδέεται με τα υπόλοιπα
+## How it connects to the rest
 
-Αυτή η ενότητα είναι η **βάση** πάνω στην οποία χτίζονται όλες οι υπόλοιπες:
+This section is the **foundation** on which all other sections build:
 
 ```
-01-fundamentals (εδώ είσαι)
-├──> 02-languages-and-runtimes   — εφαρμογή paradigms σε συγκεκριμένες γλώσσες
-├──> 03-architecture             — design patterns + SOLID σε system-level σχεδιασμό
-├──> 04-project-structure        — clean code principles στη δομή φακέλων
-├──> 05-frontend / 06-backend    — patterns + data structures στην πράξη
-├──> 07-database                 — data structures πίσω από indexes, B-trees, hashing
+01-fundamentals (you are here)
+├──> 02-languages-and-runtimes   — applying paradigms to specific languages
+├──> 03-architecture             — design patterns + SOLID at system-level design
+├──> 04-project-structure        — clean code principles in folder structure
+├──> 05-frontend / 06-backend    — patterns + data structures in practice
+├──> 07-database                 — data structures behind indexes, B-trees, hashing
 ├──> 09-performance              — Big-O, algorithm selection, complexity analysis
-├──> 11-testing                  — testing principles από clean code εις βάθος
-└──> 13-code-quality             — refactoring + code smells σε production
+├──> 11-testing                  — testing principles from clean code in depth
+└──> 13-code-quality             — refactoring + code smells in production
 ```
 
-### Προτεινόμενη σειρά μελέτης
+### Recommended study order
 
-1. **Clean Code > 01-principles** — ξεκίνα με SOLID, DRY, KISS
-2. **Programming Paradigms** — κατανόησε OOP vs Functional vs τα υπόλοιπα
-3. **Data Structures** — arrays μέχρι graphs
+1. **Clean Code > 01-principles** — start with SOLID, DRY, KISS
+2. **Programming Paradigms** — understand OOP vs Functional vs the rest
+3. **Data Structures** — arrays through graphs
 4. **Algorithms** — sorting, searching, graph algorithms
 5. **Design Patterns** — GoF + modern patterns
-6. **SOLID Principles** — εις βάθος μετά τα basics
+6. **SOLID Principles** — in-depth after the basics
